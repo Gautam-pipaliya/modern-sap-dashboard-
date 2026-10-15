@@ -58,11 +58,11 @@ services:
         value: "8000"
       - key: COPILOT_MEMORY_DB
         value: /app/data/copilot_memory.sqlite3
-      - key: OPENAI_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
-      - key: OPENAI_MODEL
-        value: gpt-4.1
-      - key: OPENAI_BASE_URL
-        value: https://api.openai.com/v1
-      - key: OPENAI_TIMEOUT_SECONDS
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+      - key: GEMINI_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai/
+      - key: GEMINI_TIMEOUT_SECONDS
         value: "60"

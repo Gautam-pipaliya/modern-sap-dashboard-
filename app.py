@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     client = build_client()
-    application.state.openai_client = client
+    application.state.gemini_client = client
     try:
         yield
     finally:
@@ -40,7 +40,7 @@ async def lifespan(application: FastAPI):
 app = FastAPI(
     title="SAP ABAP Copilot API",
     version="1.0.0",
-    description="OpenAI-compatible chatbot for the SAP Web Dashboard",
+    description="Gemini-powered chatbot for the SAP Web Dashboard",
     lifespan=lifespan,
 )
 
@@ -413,36 +413,33 @@ def replace_memory(old_content: str, new_content: str) -> str:
             return "updated"
 
 
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+
+
 def build_client() -> Optional[AsyncOpenAI]:
-    api_key = os.getenv("OPENAI_API_KEY") or os.getenv("CHATGPT_API_KEY")
+    # Gemini is the intentional default. Do not fall back to an old OpenAI key.
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         return None
 
     try:
-        timeout_seconds = float(os.getenv("OPENAI_TIMEOUT_SECONDS", "60"))
+        timeout_seconds = float(os.getenv("GEMINI_TIMEOUT_SECONDS", "60"))
     except ValueError as error:
-        raise RuntimeError("OPENAI_TIMEOUT_SECONDS must be a number.") from error
+        raise RuntimeError("GEMINI_TIMEOUT_SECONDS must be a number.") from error
 
     if not 1 <= timeout_seconds <= 90:
-        raise RuntimeError("OPENAI_TIMEOUT_SECONDS must be between 1 and 90 seconds.")
+        raise RuntimeError("GEMINI_TIMEOUT_SECONDS must be between 1 and 90 seconds.")
 
-    base_url = os.getenv("OPENAI_BASE_URL") or os.getenv("CHATGPT_API_BASE_URL")
-    trust_env = os.getenv("OPENAI_TRUST_ENV", "true").strip().lower() not in {"0", "false", "no", "off"}
+    base_url = os.getenv("GEMINI_BASE_URL", GEMINI_BASE_URL)
+    trust_env = os.getenv("GEMINI_TRUST_ENV", "true").strip().lower() not in {"0", "false", "no", "off"}
     http_client = httpx.AsyncClient(
         trust_env=trust_env,
         timeout=httpx.Timeout(timeout_seconds, connect=min(timeout_seconds, 10.0)),
     )
 
-    if base_url:
-        return AsyncOpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            http_client=http_client,
-            timeout=timeout_seconds,
-            max_retries=0,
-        )
     return AsyncOpenAI(
         api_key=api_key,
+        base_url=base_url,
         http_client=http_client,
         timeout=timeout_seconds,
         max_retries=0,
@@ -450,7 +447,7 @@ def build_client() -> Optional[AsyncOpenAI]:
 
 
 def configured_model() -> str:
-    return os.getenv("OPENAI_MODEL") or os.getenv("CHATGPT_MODEL") or "gpt-4.1"
+    return os.getenv("GEMINI_MODEL") or "gemini-3.8-flash"
 
 
 @app.get("/health")
@@ -541,7 +538,7 @@ async def chat_with_ai(payload: ChatRequest, request: Request):
 
     if is_greeting:
         return ChatResponse(
-            answer="Hi! I'm here and ready to help with SAP and ABAP. For detailed AI answers and file analysis, the OpenAI API quota must be available."
+            answer="Hi! I'm here and ready to help with SAP and ABAP. For detailed AI answers and file analysis, the Gemini API quota must be available."
         )
 
     auto_memory = extract_memory_fact(prompt)
@@ -569,14 +566,14 @@ async def chat_with_ai(payload: ChatRequest, request: Request):
             answer="Forgot that saved fact." if removed else "I could not find that exact saved fact."
         )
 
-    client = request.app.state.openai_client
+    client = request.app.state.gemini_client
     if client is None:
         if is_greeting:
-            return ChatResponse(answer="Hi! I'm here. Add a valid OPENAI_API_KEY in .env to enable AI answers and file analysis.")
+            return ChatResponse(answer="Hi! I'm here. Add a valid GEMINI_API_KEY in .env to enable AI answers and file analysis.")
         return ChatResponse(
             answer=(
-                "OpenAI API key is not configured. "
-                "Add OPENAI_API_KEY to use the real ChatGPT API. "
+                "Gemini API key is not configured. "
+                "Add GEMINI_API_KEY to use Gemini AI chat. "
                 "The local SAP workbench logic still works without it."
             )
         )
@@ -699,16 +696,16 @@ async def chat_with_ai(payload: ChatRequest, request: Request):
         provider_status = getattr(error, "status_code", None)
         provider_message = str(getattr(error, "message", "") or "").strip()
         if provider_status == 429 or type(error).__name__ == "RateLimitError":
-            raise HTTPException(status_code=503, detail="OpenAI returned HTTP 429. Check the API project's usage, billing, and rate limits, then retry.") from error
+            raise HTTPException(status_code=503, detail="Gemini returned HTTP 429. Check your Google AI Studio project's usage and rate limits, then retry.") from error
         if provider_status in {401, 403}:
-            raise HTTPException(status_code=503, detail=f"OpenAI rejected the API key or project permissions (HTTP {provider_status}). Check OPENAI_API_KEY and the key's project access.") from error
+            raise HTTPException(status_code=503, detail=f"Gemini rejected the API key or project permissions (HTTP {provider_status}). Check GEMINI_API_KEY and its project access.") from error
         if provider_status == 400:
-            # OpenAI's 400 response usually names the rejected parameter or model;
+            # Provider 400 responses usually name the rejected parameter or model;
             # return that safe diagnostic instead of hiding it behind a generic 502.
-            detail = provider_message[:500] or "OpenAI rejected the chat request. Check the configured model and request settings."
-            raise HTTPException(status_code=502, detail=f"OpenAI rejected the chat request: {detail}") from error
+            detail = provider_message[:500] or "Gemini rejected the chat request. Check the configured model and request settings."
+            raise HTTPException(status_code=502, detail=f"Gemini rejected the chat request: {detail}") from error
         if type(error).__name__ == "APIConnectionError":
-            raise HTTPException(status_code=503, detail="Cannot connect to the OpenAI API from this machine. Check internet access, firewall rules, and any required outbound HTTPS proxy; then restart the chatbot service.") from error
+            raise HTTPException(status_code=503, detail="Cannot connect to the Gemini API from this machine. Check internet access, firewall rules, and any required outbound HTTPS proxy; then restart the chatbot service.") from error
         raise HTTPException(
             status_code=502,
             detail="The AI provider request failed" + (f" (HTTP {provider_status})" if provider_status else "") + ". Check the chatbot service logs.",

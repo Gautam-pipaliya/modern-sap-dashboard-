@@ -40,13 +40,11 @@ services:
       dockerfile: Dockerfile.chatbot
     restart: unless-stopped
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
-      OPENAI_TIMEOUT_SECONDS: ${OPENAI_TIMEOUT_SECONDS:-60}
-      CHATGPT_API_KEY: ${CHATGPT_API_KEY:-}
-      CHATGPT_MODEL: ${CHATGPT_MODEL:-}
-      CHATGPT_API_BASE_URL: ${CHATGPT_API_BASE_URL:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai/}
+      GEMINI_TIMEOUT_SECONDS: ${GEMINI_TIMEOUT_SECONDS:-60}
+      GEMINI_TRUST_ENV: ${GEMINI_TRUST_ENV:-true}
       COPILOT_HOST: 0.0.0.0
       COPILOT_PORT: 8000
       COPILOT_MEMORY_DB: /app/data/copilot_memory.sqlite3
