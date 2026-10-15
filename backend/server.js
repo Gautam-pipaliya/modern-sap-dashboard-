@@ -11,8 +11,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "127.0.0.1";
 const demoMode = String(process.env.DEMO_MODE || "false").toLowerCase() === "true";
+const chatbotHostPort = process.env.CHATBOT_HOSTPORT;
 const CHATBOT_API_URL =
-    process.env.CHATBOT_API_URL || "http://127.0.0.1:8000/api/chat";
+    process.env.CHATBOT_API_URL ||
+    (chatbotHostPort
+        ? `http://${chatbotHostPort}/api/chat`
+        : "http://127.0.0.1:8000/api/chat");
 const dashboardUsername = process.env.DASHBOARD_USERNAME || "";
 const dashboardPassword = process.env.DASHBOARD_PASSWORD || "";
 const verifySapTls =
