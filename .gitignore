@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+*.log
+*.pem
+*.key
+*.p12
+*.pfx
+certs/
+data/
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal

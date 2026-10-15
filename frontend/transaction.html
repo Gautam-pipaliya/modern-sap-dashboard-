@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAP Transaction</title>
+  <style>
+    :root { color-scheme:light; --ink:#172b4d; --muted:#5e6c84; --line:#dfe3e8; --blue:#0a6ed1; --bg:#f4f7fa; }
+    * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 "Segoe UI",Arial,sans-serif; }
+    header { padding:20px clamp(16px,4vw,42px); background:#0b2e4f; color:#fff; }
+    header a { color:#d8e6f3; text-decoration:none; font-weight:600; }
+    header a:hover { text-decoration:underline; }
+    main { max-width:1500px; margin:20px auto; padding:0 16px 24px; }
+    .card { overflow:hidden; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 5px 20px #19365b0c; }
+    .head { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; padding:22px 24px; border-bottom:1px solid var(--line); }
+    h1 { margin:0; font-size:25px; }
+    .code { color:var(--blue); font-weight:800; letter-spacing:.04em; }
+    .description { margin:5px 0 0; color:var(--muted); }
+    .module { display:inline-flex; border-radius:999px; padding:5px 10px; background:#eaf3fc; color:#064f91; font-size:12px; font-weight:700; white-space:nowrap; }
+    .toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:9px; padding:12px 16px; background:#f8fafc; border-bottom:1px solid var(--line); }
+    .okcode-form { display:flex; gap:7px; flex:1 1 470px; }
+    .okcode-form input { min-width:120px; flex:1; padding:8px 10px; border:1px solid #b8c2cc; border-radius:7px; font:13px "Segoe UI",Arial,sans-serif; }
+    .okcode-form input:focus { outline:2px solid #91c8ff; border-color:var(--blue); }
+    button { border:1px solid #b7d8f7; border-radius:7px; padding:8px 12px; background:#eaf3fc; color:#064f91; font:600 13px "Segoe UI",Arial,sans-serif; cursor:pointer; }
+    button.primary { background:var(--blue); color:#fff; border-color:var(--blue); }
+    button:disabled { opacity:.55; cursor:wait; }
+    .status { margin-left:auto; color:var(--muted); font-size:12px; }
+    .status.error { color:#b42318; }
+    .frame-wrap { position:relative; min-height:70vh; background:#eef2f6; }
+    iframe { display:block; width:100%; height:min(78vh,900px); min-height:620px; border:0; background:#fff; }
+    .loading { position:absolute; inset:0; display:grid; place-items:center; padding:20px; color:var(--muted); pointer-events:none; }
+    .frame-diagnostic { position:absolute; z-index:2; inset:16px 16px auto; max-width:760px; margin:auto; padding:16px 18px; border:1px solid #f2b8b5; border-radius:10px; background:#fff8f7; color:#7a271a; box-shadow:0 8px 28px #172b4d18; }
+    .frame-diagnostic strong { display:block; margin-bottom:5px; color:#9f1b1b; }
+    .frame-diagnostic p { margin:0; line-height:1.55; }
+    .frame-diagnostic small { display:block; margin-top:9px; color:#765b59; overflow-wrap:anywhere; }
+    @media(max-width:650px) { .head { padding:18px; } .status { width:100%; margin-left:0; } iframe { height:72vh; min-height:520px; } }
+  </style>
+</head>
+<body>
+  <header><a href="/">← Back to Workbench</a></header>
+  <main>
+    <section class="card">
+      <div class="head">
+        <div><div id="transactionCode" class="code">SAP</div><h1 id="transactionTitle">Loading transaction…</h1><p id="transactionDescription" class="description"></p></div>
+        <span id="transactionModule" class="module">SAP transaction</span>
+      </div>
+      <div class="toolbar">
+        <form id="okCodeForm" class="okcode-form">
+          <input id="okCodeInput" aria-label="SAP transaction code or OK-Code" autocomplete="off" placeholder="T-code or SAP command: /nVA03, /oVA01, /h, /nex">
+          <button id="runCommandButton" type="submit" class="primary">Run</button>
+        </form>
+        <button id="retryButton" type="button">Reconnect</button>
+        <button id="newTabButton" type="button" class="primary" disabled>Open SAP in new tab</button>
+        <span id="connectionStatus" class="status" role="status" aria-live="polite">Preparing SAP GUI…</span>
+      </div>
+      <div class="frame-wrap">
+        <div id="loadingMessage" class="loading">Preparing the SAP transaction…</div>
+        <div id="frameDiagnostic" class="frame-diagnostic" role="alert" hidden>
+          <strong id="frameDiagnosticTitle"></strong>
+          <p id="frameDiagnosticMessage"></p>
+          <small id="frameDiagnosticDetails" hidden></small>
+        </div>
+        <iframe id="sapFrame" title="SAP transaction" hidden></iframe>
+      </div>
+    </section>
+  </main>
+  <script src="/js/tcode-catalog.js"></script>
+  <script>
+    'use strict';
+    const params = new URLSearchParams(window.location.search);
+    const initialCommand = params.get('command') || '';
+    const rawTcode = String(params.get('tcode') || '').trim().toUpperCase().replace(/^:/, '');
+    const openSe38Editor = !initialCommand && rawTcode === 'SE38' && !params.has('program');
+    if (openSe38Editor) window.location.replace('/?page=se38');
+    const parser = window.SAP_GUI_COMMAND_PARSER;
+    const catalog = window.SAP_FUNCTIONAL_TCODE_CATALOG || [];
+    const status = document.getElementById('connectionStatus');
+    const loading = document.getElementById('loadingMessage');
+    const frame = document.getElementById('sapFrame');
+    const frameDiagnostic = document.getElementById('frameDiagnostic');
+    const frameDiagnosticTitle = document.getElementById('frameDiagnosticTitle');
+    const frameDiagnosticMessage = document.getElementById('frameDiagnosticMessage');
+    const frameDiagnosticDetails = document.getElementById('frameDiagnosticDetails');
+    const retryButton = document.getElementById('retryButton');
+    const newTabButton = document.getElementById('newTabButton');
+    const commandForm = document.getElementById('okCodeForm');
+    const commandInput = document.getElementById('okCodeInput');
+    let activeTcode = rawTcode || 'SESSION_MANAGER';
+    let activeSkipInitial = false;
+    let sapUrl = '';
+    let pendingOkCode = '';
+    let frameLoadTimer = null;
+
+    function setFrameDiagnostic(title, message, details = '') {
+      frameDiagnosticTitle.textContent = title;
+      frameDiagnosticMessage.textContent = message;
+      frameDiagnosticDetails.textContent = details;
+      frameDiagnosticDetails.hidden = !details;
+      frameDiagnostic.hidden = false;
+    }
+
+    function inspectSapFrame() {
+      let responseText = '';
+      try { responseText = frame.contentDocument?.body?.innerText || ''; } catch (_) {}
+
+      const diagnostics = [
+        {
+          pattern: /Cannot GET\s+\/sap\/bc\/gui\/sap\/its\/webgui/i,
+          title: 'The local server did not proxy SAP WebGUI',
+          message: 'Restart the workbench server so its SAP path proxy is active, then reconnect.'
+        },
+        {
+          pattern: /SAP WebGUI proxy (?:error|configuration error):\s*([^\n]+)/i,
+          title: 'The SAP WebGUI proxy could not connect',
+          message: 'Check the SAP endpoint, VPN or network access, and the SAP certificate configuration.'
+        },
+        {
+          pattern: /(?:401\s+Unauthorized|HTTP\s+401|authentication required)/i,
+          title: 'SAP did not authenticate this WebGUI request',
+          message: 'Check the SAP user credentials and confirm the user can access SAP GUI for HTML.'
+        },
+        {
+          pattern: /(?:403\s+Forbidden|HTTP\s+403|not authorized|not authorised|no authorization|no authorisation)/i,
+          title: 'SAP denied access to this transaction',
+          message: `Confirm that your SAP user is authorized for ${activeTcode}.`
+        }
+      ];
+
+      const diagnostic = diagnostics.find((item) => item.pattern.test(responseText));
+      if (!diagnostic) {
+        frameDiagnostic.hidden = true;
+        return false;
+      }
+
+      const match = responseText.match(diagnostic.pattern);
+      const details = match?.[1] || responseText.trim().slice(0, 360);
+      setFrameDiagnostic(diagnostic.title, diagnostic.message, details);
+      status.textContent = diagnostic.title;
+      status.classList.add('error');
+      return true;
+    }
+
+    function setTransactionHeader(code) {
+      const entry = catalog.find((item) => item.code === code);
+      const title = entry?.desc || 'SAP transaction workspace';
+      const module = entry?.module || 'Custom / system-specific';
+      document.title = `${code || 'SAP'} | ${title}`;
+      document.getElementById('transactionCode').textContent = code || 'SAP';
+      document.getElementById('transactionTitle').textContent = title;
+      document.getElementById('transactionDescription').textContent = entry
+        ? `Live ${module} transaction rendered by your SAP system.`
+        : 'Live SAP transaction rendered by your configured SAP GUI for HTML service.';
+      document.getElementById('transactionModule').textContent = module;
+    }
+
+    function sendOkCodeToSap(code) {
+      try {
+        const doc = frame.contentDocument;
+        if (!doc) return false;
+        const candidates = [...doc.querySelectorAll('input,textarea')];
+        const commandField = candidates.find((field) => {
+          const signature = [field.id, field.name, field.title, field.getAttribute('aria-label')].join(' ');
+          return /(?:ok.?code|command.?field|sap.?command)/i.test(signature);
+        });
+        if (!commandField?.form) return false;
+        commandField.focus();
+        commandField.value = code;
+        commandField.dispatchEvent(new Event('input', { bubbles: true }));
+        commandField.dispatchEvent(new Event('change', { bubbles: true }));
+        commandField.form.requestSubmit();
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    frame.addEventListener('load', () => {
+      if (frameLoadTimer) clearTimeout(frameLoadTimer);
+      frameLoadTimer = null;
+      loading.hidden = true;
+      if (inspectSapFrame()) return;
+      if (!pendingOkCode) {
+        status.textContent = `SAP WebGUI returned a page for ${activeTcode}.`;
+        status.classList.remove('error');
+        return;
+      }
+      const code = pendingOkCode;
+      pendingOkCode = '';
+      if (sendOkCodeToSap(code)) {
+        status.textContent = `${code} sent to SAP's OK-Code field.`;
+        status.classList.remove('error');
+      } else {
+        status.textContent = `SAP GUI did not expose its OK-Code field to this page. Enter ${code} in SAP's own command field below.`;
+        status.classList.add('error');
+        commandInput.value = code;
+        commandInput.focus();
+      }
+    });
+
+    async function getLaunch(raw, program = '') {
+      const query = new URLSearchParams({ tcode: raw });
+      if (program) query.set('program', program);
+      const response = await fetch(`/api/tcode?${query.toString()}`, { headers: { Accept: 'application/json' } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.message || `HTTP ${response.status}`);
+      return data;
+    }
+
+    async function loadTransaction(code, skipInitial = false) {
+      const cleanCode = String(code || '').trim().toUpperCase();
+      if (!/^\/?[A-Z0-9_/-]{1,40}$/.test(cleanCode)) throw new Error('Enter a valid SAP transaction code.');
+      const launchCode = skipInitial ? `/*${cleanCode}` : cleanCode;
+      const programToOpen = cleanCode === 'SE38' ? String(params.get('program') || '').trim().toUpperCase() : '';
+      const data = await getLaunch(launchCode, programToOpen);
+      if (!data.url || !data.url.startsWith('/')) throw new Error('SAP did not return a usable WebGUI launch URL.');
+      activeTcode = cleanCode;
+      activeSkipInitial = !!skipInitial;
+      sapUrl = data.url;
+      setTransactionHeader(cleanCode);
+      if (frameLoadTimer) clearTimeout(frameLoadTimer);
+      frameDiagnostic.hidden = true;
+      loading.textContent = `Connecting to SAP for ${cleanCode}…`;
+      loading.hidden = false;
+      frame.hidden = false;
+      newTabButton.disabled = false;
+      status.textContent = programToOpen
+        ? `Opening ${programToOpen} in SE38…`
+        : `Connecting to ${cleanCode} in SAP GUI for HTML…`;
+      status.classList.remove('error');
+      frame.src = sapUrl;
+      frameLoadTimer = setTimeout(() => {
+        loading.hidden = true;
+        setFrameDiagnostic(
+          'SAP WebGUI is taking longer than expected',
+          'The browser has not received a page yet. Check VPN or network access, then use Reconnect or open SAP in a new tab.'
+        );
+        status.textContent = `Timed out waiting for ${cleanCode}.`;
+        status.classList.add('error');
+      }, 45000);
+      try { localStorage.setItem('sapWorkbench.lastTcode', cleanCode); } catch (_) {}
+    }
+
+    async function runCommand(raw, { initial = false } = {}) {
+      const parsed = parser ? parser.parse(raw) : { action: 'DIRECT_TCODE', tcode: raw.trim().toUpperCase(), raw };
+      if (parsed.action === 'EMPTY') return;
+
+      if (['DIRECT_TCODE', 'SAME_SESSION'].includes(parsed.action)) {
+        await loadTransaction(parsed.tcode, !!parsed.skipInitial);
+        return;
+      }
+
+      if (parsed.action === 'SESSION_LIST') {
+        if (!initial && !frame.hidden && sendOkCodeToSap('/o')) {
+          status.textContent = 'SAP opened its session list.';
+          status.classList.remove('error');
+        } else if (initial) {
+          await loadTransaction('SESSION_MANAGER');
+        } else {
+          window.open('/transaction.html?tcode=SESSION_MANAGER', '_blank', 'noopener,noreferrer');
+          status.textContent = 'Opened SAP Easy Access in a new GUI window.';
+        }
+        return;
+      }
+
+      if (parsed.action === 'NEW_SESSION') {
+        const target = parsed.tcode || 'SESSION_MANAGER';
+        if (initial) {
+          await loadTransaction(target, !!parsed.skipInitial);
+        } else {
+          const url = `/transaction.html?tcode=${encodeURIComponent(target)}${parsed.skipInitial ? '&skip=1' : ''}`;
+          window.open(url, '_blank', 'noopener,noreferrer');
+          status.textContent = `${target} opened in a new SAP GUI window.`;
+        }
+        return;
+      }
+
+      if (parsed.action === 'LOGOFF' || parsed.action === 'END_SESSION') {
+        const data = await getLaunch(parsed.raw);
+        if (!data.url) throw new Error('SAP did not return a session close URL.');
+        status.textContent = parsed.action === 'LOGOFF' ? 'Logging off from SAP…' : 'Closing the SAP GUI session…';
+        window.location.assign(data.url);
+        return;
+      }
+
+      if (parsed.action === 'DEBUG' || parsed.action === 'FUNCTION_CODE') {
+        const code = parsed.action === 'DEBUG' ? parsed.raw.toUpperCase() : `=${parsed.functionCode}`;
+        if (!frame.hidden && sendOkCodeToSap(code)) {
+          status.textContent = `${code} sent to SAP's OK-Code field.`;
+          status.classList.remove('error');
+          return;
+        }
+        pendingOkCode = code;
+        if (frame.hidden) {
+          await loadTransaction('SESSION_MANAGER');
+        } else {
+          status.textContent = `Could not send ${code} automatically. Enter it in SAP's own OK-Code field.`;
+          status.classList.add('error');
+          commandInput.focus();
+        }
+        return;
+      }
+
+      throw new Error('Unsupported SAP command.');
+    }
+
+    commandForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const raw = commandInput.value.trim();
+      if (!raw) return;
+      rememberCommand(raw);
+      retryButton.disabled = true;
+      newTabButton.disabled = true;
+      status.textContent = `Running ${raw}…`;
+      status.classList.remove('error');
+      try {
+        await runCommand(raw);
+        if (raw.toUpperCase() !== '/H' && raw.toUpperCase() !== '/HS') commandInput.value = '';
+      } catch (error) {
+        status.textContent = error.message;
+        status.classList.add('error');
+      } finally {
+        retryButton.disabled = false;
+        newTabButton.disabled = !sapUrl;
+      }
+    });
+
+    retryButton.addEventListener('click', async () => {
+      retryButton.disabled = true;
+      status.textContent = `Reconnecting to ${activeTcode}…`;
+      try { await loadTransaction(activeTcode, activeSkipInitial); }
+      catch (error) { status.textContent = error.message; status.classList.add('error'); }
+      finally { retryButton.disabled = false; }
+    });
+    newTabButton.addEventListener('click', () => {
+      if (sapUrl) window.open(sapUrl, '_blank', 'noopener,noreferrer');
+    });
+
+    const commandHistoryKey = 'sapWorkbench.commandHistory';
+    let commandHistory = [];
+    let commandHistoryIndex = -1;
+    try {
+      const savedHistory = JSON.parse(localStorage.getItem(commandHistoryKey) || '[]');
+      if (Array.isArray(savedHistory)) commandHistory = savedHistory.filter((value) => typeof value === 'string').slice(0, 20);
+    } catch (_) {}
+
+    function rememberCommand(value) {
+      commandHistory = [value, ...commandHistory.filter((entry) => entry !== value)].slice(0, 20);
+      commandHistoryIndex = -1;
+      try { localStorage.setItem(commandHistoryKey, JSON.stringify(commandHistory)); } catch (_) {}
+    }
+
+    commandInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+      if (!commandHistory.length) return;
+      event.preventDefault();
+      if (event.key === 'ArrowUp') {
+        commandHistoryIndex = Math.min(commandHistoryIndex + 1, commandHistory.length - 1);
+        commandInput.value = commandHistory[commandHistoryIndex];
+      } else if (commandHistoryIndex > 0) {
+        commandHistoryIndex -= 1;
+        commandInput.value = commandHistory[commandHistoryIndex];
+      } else {
+        commandHistoryIndex = -1;
+        commandInput.value = '';
+      }
+      commandInput.setSelectionRange(commandInput.value.length, commandInput.value.length);
+    });
+
+    if (!openSe38Editor) {
+      const initialRaw = initialCommand || (params.get('skip') === '1' ? `/*${rawTcode}` : rawTcode) || 'SESSION_MANAGER';
+      const initialParsed = parser ? parser.parse(initialRaw) : { action: 'DIRECT_TCODE', tcode: initialRaw };
+      setTransactionHeader(initialParsed.tcode || rawTcode || 'SAP');
+      runCommand(initialRaw, { initial: true }).catch((error) => {
+        status.textContent = `Could not open SAP transaction: ${error.message}`;
+        status.classList.add('error');
+        loading.textContent = 'SAP could not start this transaction. Check the connection and your authorization, then reconnect.';
+      });
+    }
+  </script>
+</body>
+</html>

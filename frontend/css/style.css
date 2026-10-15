@@ -1,0 +1,2071 @@
+/* =========================================================
+   SAP WEB DEVELOPMENT WORKBENCH
+   ADVANCED ENTERPRISE UI
+========================================================= */
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+
+body {
+
+    font-family:
+        "72",
+        "72full",
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    background: #f5f7fa;
+
+    color: #1d2d3e;
+
+    overflow: hidden;
+
+}
+
+
+/* =========================================================
+   VARIABLES
+========================================================= */
+
+:root {
+
+    --sap-blue: #0a6ed1;
+
+    --sap-blue-dark: #0854a0;
+
+    --sap-blue-light: #eaf3fc;
+
+    --sap-text: #1d2d3e;
+
+    --sap-text-secondary: #556b82;
+
+    --sap-border: #d9e2ec;
+
+    --sap-background: #f5f7fa;
+
+    --sap-surface: #ffffff;
+
+    --sap-success: #107e3e;
+
+    --sap-warning: #e9730c;
+
+    --sap-error: #bb0000;
+
+    --sidebar-width: 265px;
+
+}
+
+
+/* =========================================================
+   APPLICATION SHELL
+========================================================= */
+
+.app-shell {
+
+    width: 100vw;
+
+    height: 100vh;
+
+    display: flex;
+
+    flex-direction: column;
+
+}
+
+
+/* =========================================================
+   TOP SHELL
+========================================================= */
+
+.shell-bar {
+
+    height: 64px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    background: #ffffff;
+
+    border-bottom: 1px solid var(--sap-border);
+
+    padding: 0 22px;
+
+    box-shadow:
+        0 1px 4px rgba(0, 0, 0, 0.06);
+
+    z-index: 100;
+
+}
+
+
+/* BRAND */
+
+.brand-area {
+
+    display: flex;
+
+    align-items: center;
+
+    min-width: 300px;
+
+}
+
+
+.sap-logo {
+
+    font-weight: 800;
+
+    font-size: 17px;
+
+    color: white;
+
+    background: #0a6ed1;
+
+    padding: 8px 10px;
+
+    border-radius: 5px;
+
+    letter-spacing: -1px;
+
+}
+
+
+.brand-divider {
+
+    height: 30px;
+
+    width: 1px;
+
+    background: var(--sap-border);
+
+    margin: 0 15px;
+
+}
+
+
+.brand-name {
+
+    font-size: 16px;
+
+    font-weight: 600;
+
+    color: var(--sap-text);
+
+}
+
+
+/* SEARCH */
+
+.global-search {
+
+    width: 430px;
+
+    height: 38px;
+
+    background: #f5f7fa;
+
+    border: 1px solid #ccd6e0;
+
+    border-radius: 6px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 0 10px;
+
+}
+
+
+.search-icon {
+
+    font-size: 21px;
+
+    color: #60758a;
+
+    margin-right: 8px;
+
+}
+
+
+.global-search input {
+
+    flex: 1;
+
+    border: none;
+
+    outline: none;
+
+    background: transparent;
+
+    font-size: 13px;
+
+    color: var(--sap-text);
+
+}
+
+
+.search-shortcut {
+
+    font-size: 11px;
+
+    color: #788da2;
+
+    border: 1px solid #cbd5df;
+
+    border-radius: 4px;
+
+    padding: 3px 6px;
+
+}
+
+
+/* SHELL ACTIONS */
+
+.shell-actions {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+}
+
+
+.shell-button {
+
+    position: relative;
+
+    width: 38px;
+
+    height: 38px;
+
+    border: none;
+
+    background: transparent;
+
+    border-radius: 6px;
+
+    cursor: pointer;
+
+    font-size: 17px;
+
+    color: #52677d;
+
+}
+
+
+.shell-button:hover {
+
+    background: var(--sap-blue-light);
+
+    color: var(--sap-blue);
+
+}
+
+
+.notification-badge {
+
+    position: absolute;
+
+    top: 3px;
+
+    right: 3px;
+
+    min-width: 15px;
+
+    height: 15px;
+
+    padding: 0 4px;
+
+    border-radius: 8px;
+
+    background: #bb0000;
+
+    color: white;
+
+    font-size: 9px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+}
+
+
+/* SYSTEM */
+
+.system-selector {
+
+    height: 38px;
+
+    padding: 0 12px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    border: 1px solid var(--sap-border);
+
+    border-radius: 6px;
+
+    background: white;
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+}
+
+
+.system-status-dot {
+
+    width: 8px;
+
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: var(--sap-success);
+
+    box-shadow:
+        0 0 0 3px rgba(16, 126, 62, 0.12);
+
+}
+
+
+.system-text {
+
+    color: var(--sap-success);
+
+}
+
+
+/* USER */
+
+.user-menu {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding-left: 8px;
+
+    cursor: pointer;
+
+}
+
+
+.avatar {
+
+    width: 36px;
+
+    height: 36px;
+
+    border-radius: 50%;
+
+    background: #e8f1fb;
+
+    color: var(--sap-blue);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+}
+
+
+.user-info {
+
+    display: flex;
+
+    flex-direction: column;
+
+}
+
+
+.user-info strong {
+
+    font-size: 12px;
+
+}
+
+
+.user-info small {
+
+    color: var(--sap-text-secondary);
+
+    font-size: 10px;
+
+}
+
+
+/* =========================================================
+   BODY
+========================================================= */
+
+.application-body {
+
+    display: flex;
+
+    flex: 1;
+
+    min-height: 0;
+
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.sidebar {
+
+    width: var(--sidebar-width);
+
+    flex-shrink: 0;
+
+    background: #ffffff;
+
+    border-right: 1px solid var(--sap-border);
+
+    display: flex;
+
+    flex-direction: column;
+
+    overflow-y: auto;
+
+    overflow-x: hidden;
+
+}
+
+
+.sidebar::-webkit-scrollbar {
+
+    width: 5px;
+
+}
+
+
+.sidebar::-webkit-scrollbar-thumb {
+
+    background: #ccd6e0;
+
+    border-radius: 5px;
+
+}
+
+
+/* NEW OBJECT */
+
+.sidebar-top {
+
+    padding: 18px 15px 12px;
+
+}
+
+
+.new-object-button {
+
+    width: 100%;
+
+    height: 42px;
+
+    border: none;
+
+    border-radius: 6px;
+
+    background: var(--sap-blue);
+
+    color: white;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 9px;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 2px 5px rgba(10, 110, 209, 0.2);
+
+}
+
+
+.new-object-button:hover {
+
+    background: var(--sap-blue-dark);
+
+}
+
+
+.new-icon {
+
+    font-size: 19px;
+
+    line-height: 1;
+
+}
+
+
+/* NAV GROUP */
+
+.nav-group {
+
+    padding: 5px 10px;
+
+}
+
+
+.nav-heading {
+
+    color: #8293a6;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.8px;
+
+    padding: 10px 12px 7px;
+
+}
+
+
+/* NAV ITEM */
+
+.nav-item {
+
+    width: 100%;
+
+    min-height: 38px;
+
+    border: none;
+
+    background: transparent;
+
+    border-radius: 6px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 0 11px;
+
+    color: #3c5065;
+
+    cursor: pointer;
+
+    font-size: 13px;
+
+    text-align: left;
+
+    transition:
+        background 0.15s,
+        color 0.15s;
+
+}
+
+
+.nav-item:hover {
+
+    background: #f0f6fc;
+
+    color: var(--sap-blue);
+
+}
+
+
+.nav-item.active {
+
+    background: #eaf3fc;
+
+    color: var(--sap-blue);
+
+    font-weight: 600;
+
+}
+
+
+.nav-icon {
+
+    width: 20px;
+
+    text-align: center;
+
+    color: #60788f;
+
+    font-weight: 600;
+
+}
+
+
+.nav-item.active .nav-icon {
+
+    color: var(--sap-blue);
+
+}
+
+
+.nav-label {
+
+    flex: 1;
+
+}
+
+
+.nav-arrow {
+
+    font-size: 16px;
+
+    color: #94a3b3;
+
+}
+
+
+/* SUB ITEMS */
+
+.nav-subitem {
+
+    width: calc(100% - 27px);
+
+    margin-left: 27px;
+
+    height: 32px;
+
+    border: none;
+
+    background: transparent;
+
+    text-align: left;
+
+    color: #667b90;
+
+    font-size: 12px;
+
+    padding-left: 11px;
+
+    border-left: 1px solid #e0e7ee;
+
+    cursor: pointer;
+
+}
+
+
+.nav-subitem:hover {
+
+    color: var(--sap-blue);
+
+    background: #f7fafd;
+
+}
+
+
+/* BOTTOM */
+
+.sidebar-bottom {
+
+    margin-top: auto;
+
+    padding: 10px;
+
+    border-top: 1px solid var(--sap-border);
+
+}
+
+
+/* =========================================================
+   MAIN CONTENT
+========================================================= */
+
+.main-content {
+
+    flex: 1;
+
+    min-width: 0;
+
+    overflow-y: auto;
+
+    background: var(--sap-background);
+
+    padding: 30px 34px 50px;
+
+}
+
+
+.main-content::-webkit-scrollbar {
+
+    width: 7px;
+
+}
+
+
+.main-content::-webkit-scrollbar-thumb {
+
+    background: #cbd6e0;
+
+    border-radius: 8px;
+
+}
+
+
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+
+.page-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-start;
+
+    margin-bottom: 26px;
+
+}
+
+
+.page-header-left h1 {
+
+    margin: 0;
+
+    color: var(--sap-text);
+
+    font-size: 25px;
+
+    font-weight: 600;
+
+}
+
+
+.page-header-left p {
+
+    margin: 7px 0 0;
+
+    color: var(--sap-text-secondary);
+
+    font-size: 13px;
+
+}
+
+
+.breadcrumb {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    margin-bottom: 8px;
+
+    color: #708398;
+
+    font-size: 11px;
+
+}
+
+
+.breadcrumb-current {
+
+    color: var(--sap-blue);
+
+}
+
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+.welcome-banner {
+
+    background:
+        linear-gradient(
+            110deg,
+            #ffffff 0%,
+            #f5f9fe 100%
+        );
+
+    border: 1px solid var(--sap-border);
+
+    border-radius: 10px;
+
+    padding: 24px 26px;
+
+    margin-bottom: 22px;
+
+    position: relative;
+
+    overflow: hidden;
+
+}
+
+
+.welcome-banner::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 200px;
+
+    height: 200px;
+
+    right: -70px;
+
+    top: -100px;
+
+    border-radius: 50%;
+
+    background: #e6f1fc;
+
+}
+
+
+.welcome-title {
+
+    font-size: 20px;
+
+    font-weight: 600;
+
+    margin-bottom: 7px;
+
+}
+
+
+.welcome-text {
+
+    color: var(--sap-text-secondary);
+
+    font-size: 13px;
+
+}
+
+
+/* =========================================================
+   STAT CARDS
+========================================================= */
+
+.stats-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 16px;
+
+    margin-bottom: 24px;
+
+}
+
+
+.stat-card {
+
+    background: white;
+
+    border: 1px solid var(--sap-border);
+
+    border-radius: 9px;
+
+    padding: 18px;
+
+    position: relative;
+
+    overflow: hidden;
+
+    transition:
+        transform 0.15s,
+        box-shadow 0.15s;
+
+}
+
+
+.stat-card:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 5px 18px rgba(0, 0, 0, 0.07);
+
+}
+
+
+.stat-label {
+
+    font-size: 12px;
+
+    color: var(--sap-text-secondary);
+
+    margin-bottom: 8px;
+
+}
+
+
+.stat-value {
+
+    font-size: 27px;
+
+    font-weight: 600;
+
+    color: var(--sap-text);
+
+}
+
+
+.stat-change {
+
+    margin-top: 8px;
+
+    font-size: 11px;
+
+    color: var(--sap-success);
+
+}
+
+
+.stat-icon {
+
+    position: absolute;
+
+    top: 18px;
+
+    right: 18px;
+
+    width: 34px;
+
+    height: 34px;
+
+    border-radius: 7px;
+
+    background: var(--sap-blue-light);
+
+    color: var(--sap-blue);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+}
+
+
+/* =========================================================
+   DASHBOARD TWO COLUMN
+========================================================= */
+
+.dashboard-columns {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr);
+
+    gap: 18px;
+
+    margin-bottom: 20px;
+
+}
+
+
+/* =========================================================
+   PANEL
+========================================================= */
+
+.panel {
+
+    background: white;
+
+    border: 1px solid var(--sap-border);
+
+    border-radius: 9px;
+
+    overflow: hidden;
+
+}
+
+
+.panel-header {
+
+    min-height: 54px;
+
+    padding: 0 18px;
+
+    border-bottom: 1px solid #e5ebf0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+}
+
+
+.panel-title {
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+}
+
+
+.panel-subtitle {
+
+    color: var(--sap-text-secondary);
+
+    font-size: 11px;
+
+    margin-top: 3px;
+
+}
+
+
+.panel-action {
+
+    color: var(--sap-blue);
+
+    border: none;
+
+    background: transparent;
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+}
+
+
+.panel-body {
+
+    padding: 0;
+
+}
+
+
+/* =========================================================
+   QUICK ACTIONS
+========================================================= */
+
+.quick-actions {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+}
+
+
+.quick-action {
+
+    min-height: 86px;
+
+    border: none;
+
+    border-right: 1px solid #e8edf2;
+
+    border-bottom: 1px solid #e8edf2;
+
+    background: white;
+
+    text-align: left;
+
+    padding: 15px;
+
+    cursor: pointer;
+
+}
+
+
+.quick-action:hover {
+
+    background: #f5f9fd;
+
+}
+
+
+.quick-action-icon {
+
+    color: var(--sap-blue);
+
+    font-size: 18px;
+
+    margin-bottom: 8px;
+
+}
+
+
+.quick-action-title {
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+}
+
+
+.quick-action-subtitle {
+
+    color: #718499;
+
+    font-size: 10px;
+
+    margin-top: 4px;
+
+}
+
+
+/* =========================================================
+   RECENT OBJECTS
+========================================================= */
+
+.object-row {
+
+    display: flex;
+
+    align-items: center;
+
+    min-height: 58px;
+
+    padding: 0 17px;
+
+    border-bottom: 1px solid #edf1f4;
+
+    cursor: pointer;
+
+}
+
+
+.object-row:last-child {
+
+    border-bottom: none;
+
+}
+
+
+.object-row:hover {
+
+    background: #f8fafc;
+
+}
+
+
+.object-type-icon {
+
+    width: 32px;
+
+    height: 32px;
+
+    border-radius: 6px;
+
+    background: #edf5fc;
+
+    color: var(--sap-blue);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-right: 11px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+}
+
+
+.object-info {
+
+    flex: 1;
+
+    min-width: 0;
+
+}
+
+
+.object-name {
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+}
+
+
+.object-description {
+
+    color: #7a8c9e;
+
+    font-size: 10px;
+
+    margin-top: 4px;
+
+}
+
+
+.object-type {
+
+    color: #73869a;
+
+    font-size: 10px;
+
+}
+
+
+/* =========================================================
+   ACTIVITY
+========================================================= */
+
+.activity-row {
+
+    display: flex;
+
+    gap: 12px;
+
+    padding: 14px 18px;
+
+    border-bottom: 1px solid #edf1f4;
+
+}
+
+
+.activity-dot {
+
+    width: 9px;
+
+    height: 9px;
+
+    border-radius: 50%;
+
+    background: var(--sap-success);
+
+    margin-top: 4px;
+
+    flex-shrink: 0;
+
+}
+
+
+.activity-text {
+
+    flex: 1;
+
+}
+
+
+.activity-title {
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+}
+
+
+.activity-description {
+
+    color: #74869a;
+
+    font-size: 10px;
+
+    margin-top: 4px;
+
+}
+
+
+.activity-time {
+
+    color: #8a9aaa;
+
+    font-size: 10px;
+
+}
+
+
+/* =========================================================
+   FORM / TOOL PAGES
+========================================================= */
+
+.tool-card {
+
+    background: white;
+
+    border: 1px solid var(--sap-border);
+
+    border-radius: 9px;
+
+    margin-bottom: 18px;
+
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.02);
+
+}
+
+
+.tool-card-header {
+
+    padding: 17px 20px;
+
+    border-bottom: 1px solid #e6ecf1;
+
+}
+
+
+.tool-card-title {
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+}
+
+
+.tool-card-subtitle {
+
+    color: var(--sap-text-secondary);
+
+    font-size: 11px;
+
+    margin-top: 4px;
+
+}
+
+
+.tool-card-body {
+
+    padding: 22px;
+
+}
+
+
+/* =========================================================
+   INPUTS
+========================================================= */
+
+.form-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 18px;
+
+}
+
+
+.form-group {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+
+}
+
+
+.form-group.full {
+
+    grid-column: 1 / -1;
+
+}
+
+
+.form-group label {
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    color: #53687c;
+
+}
+
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+
+    width: 100%;
+
+    min-height: 38px;
+
+    border: 1px solid #cbd6e0;
+
+    border-radius: 5px;
+
+    background: white;
+
+    padding: 8px 10px;
+
+    font-size: 12px;
+
+    color: var(--sap-text);
+
+    outline: none;
+
+}
+
+
+.form-group textarea {
+
+    min-height: 100px;
+
+    resize: vertical;
+
+}
+
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+
+    border-color: var(--sap-blue);
+
+    box-shadow:
+        0 0 0 2px rgba(10, 110, 209, 0.12);
+
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.button-bar {
+
+    display: flex;
+
+    gap: 8px;
+
+    flex-wrap: wrap;
+
+    margin-top: 22px;
+
+}
+
+
+.btn {
+
+    min-height: 36px;
+
+    padding: 0 16px;
+
+    border-radius: 5px;
+
+    border: 1px solid transparent;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+}
+
+
+.btn-primary {
+
+    background: var(--sap-blue);
+
+    color: white;
+
+}
+
+
+.btn-primary:hover {
+
+    background: var(--sap-blue-dark);
+
+}
+
+
+.btn-secondary {
+
+    background: white;
+
+    color: var(--sap-text);
+
+    border-color: #cbd6e0;
+
+}
+
+
+.btn-secondary:hover {
+
+    background: #f5f8fb;
+
+}
+
+
+.btn-danger {
+
+    background: white;
+
+    color: var(--sap-error);
+
+    border-color: #e0b4b4;
+
+}
+
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+
+.status-badge {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    padding: 4px 8px;
+
+    border-radius: 10px;
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+}
+
+
+.status-success {
+
+    color: #107e3e;
+
+    background: #e8f5ec;
+
+}
+
+
+.status-warning {
+
+    color: #a84b00;
+
+    background: #fff2e5;
+
+}
+
+
+.status-error {
+
+    color: #bb0000;
+
+    background: #fceaea;
+
+}
+
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.data-table-wrapper {
+
+    overflow-x: auto;
+
+}
+
+
+.data-table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+}
+
+
+.data-table th {
+
+    background: #f5f7f9;
+
+    color: #566b80;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    text-align: left;
+
+    padding: 11px 14px;
+
+    border-bottom: 1px solid #dfe6ec;
+
+}
+
+
+.data-table td {
+
+    font-size: 11px;
+
+    padding: 12px 14px;
+
+    border-bottom: 1px solid #edf1f4;
+
+}
+
+
+.data-table tbody tr:hover {
+
+    background: #f7fafc;
+
+}
+
+
+/* =========================================================
+   CODE EDITOR
+========================================================= */
+
+.editor-shell {
+
+    border: 1px solid #263544;
+
+    border-radius: 7px;
+
+    overflow: hidden;
+
+    background: #1e2833;
+
+}
+
+
+.editor-toolbar {
+
+    height: 42px;
+
+    background: #273442;
+
+    border-bottom: 1px solid #3b4a59;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 12px;
+
+    color: #d8e0e7;
+
+}
+
+
+.editor-tabs {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 2px;
+
+}
+
+
+.editor-tab {
+
+    height: 32px;
+
+    padding: 0 12px;
+
+    display: flex;
+
+    align-items: center;
+
+    background: #1e2833;
+
+    color: #d7e0e8;
+
+    border-radius: 4px 4px 0 0;
+
+    font-size: 11px;
+
+}
+
+
+.editor-tab.active {
+
+    background: #18212a;
+
+    color: white;
+
+}
+
+
+.editor-actions {
+
+    display: flex;
+
+    gap: 5px;
+
+}
+
+
+.editor-button {
+
+    border: 1px solid #455565;
+
+    background: #334352;
+
+    color: #e1e8ed;
+
+    border-radius: 4px;
+
+    padding: 5px 9px;
+
+    cursor: pointer;
+
+    font-size: 10px;
+
+}
+
+
+.editor-button:hover {
+
+    background: #405365;
+
+}
+
+
+.code-editor {
+
+    width: 100%;
+
+    min-height: 520px;
+
+    padding: 18px 20px;
+
+    border: none;
+
+    outline: none;
+
+    resize: vertical;
+
+    background: #18212a;
+
+    color: #e5edf3;
+
+    font-family:
+        "Cascadia Code",
+        "Consolas",
+        monospace;
+
+    font-size: 13px;
+
+    line-height: 1.7;
+
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.empty-state {
+
+    padding: 50px 20px;
+
+    text-align: center;
+
+    color: #728499;
+
+}
+
+
+.empty-icon {
+
+    width: 50px;
+
+    height: 50px;
+
+    margin: auto auto 15px;
+
+    border-radius: 50%;
+
+    background: #edf4fb;
+
+    color: var(--sap-blue);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 20px;
+
+}
+
+
+.empty-state h3 {
+
+    color: var(--sap-text);
+
+    font-size: 14px;
+
+    margin-bottom: 7px;
+
+}
+
+
+.empty-state p {
+
+    font-size: 11px;
+
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+.toast {
+
+    position: fixed;
+
+    right: 25px;
+
+    bottom: 25px;
+
+    min-width: 260px;
+
+    background: #263544;
+
+    color: white;
+
+    border-radius: 6px;
+
+    padding: 12px 15px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    font-size: 12px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.18);
+
+    transform:
+        translateY(100px);
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    transition:
+        all 0.25s ease;
+
+    z-index: 1000;
+
+}
+
+
+.toast.show {
+
+    transform:
+        translateY(0);
+
+    opacity: 1;
+
+}
+
+
+.toast span:first-child {
+
+    width: 22px;
+
+    height: 22px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: var(--sap-success);
+
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1200px) {
+
+    .global-search {
+
+        width: 300px;
+
+    }
+
+    .stats-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+}
+
+
+@media (max-width: 900px) {
+
+    .brand-name {
+
+        display: none;
+
+    }
+
+    .global-search {
+
+        width: 260px;
+
+    }
+
+    .dashboard-columns {
+
+        grid-template-columns: 1fr;
+
+    }
+
+}
+
+
+@media (max-width: 700px) {
+
+    .sidebar {
+
+        width: 65px;
+
+    }
+
+    .nav-label,
+    .nav-heading,
+    .new-object-button span:last-child,
+    .nav-arrow,
+    .nav-subitem,
+    .sidebar-bottom {
+
+        display: none;
+
+    }
+
+    .new-object-button {
+
+        width: 40px;
+
+        margin: auto;
+
+    }
+
+    .nav-item {
+
+        justify-content: center;
+
+    }
+
+    .main-content {
+
+        padding: 20px;
+
+    }
+
+    .global-search {
+
+        display: none;
+
+    }
+
+    .system-text,
+    .user-info {
+
+        display: none;
+
+    }
+
+}
+
+
+@media (max-width: 500px) {
+
+    .stats-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+    .form-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+}

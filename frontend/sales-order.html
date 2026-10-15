@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAP Sales Order Workbench</title>
+  <style>
+    :root { color-scheme: light; --ink:#172b4d; --muted:#5e6c84; --line:#dfe3e8; --bg:#f5f7fa; --blue:#0a6ed1; --green:#18794e; --red:#b42318; }
+    * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
+    body { margin:0; font:15px/1.45 "Segoe UI",Arial,sans-serif; color:var(--ink); background:var(--bg); }
+    header { background:#0b2e4f; color:#fff; padding:22px clamp(16px,4vw,48px); }
+    header h1 { margin:0 0 5px; font-size:24px; }
+    header p { margin:0; color:#d8e6f3; }
+    .back-link { display:inline-block; margin-top:12px; color:#fff; font-weight:600; text-decoration:none; }
+    .back-link:hover { text-decoration:underline; }
+    .transaction-nav { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+    .transaction-nav a { border:1px solid #53708e; border-radius:7px; padding:6px 10px; color:#fff; font-size:12px; font-weight:700; text-decoration:none; }
+    .transaction-nav a:hover { background:#244866; }
+    main { max-width:1200px; margin:24px auto; padding:0 16px 32px; display:grid; gap:20px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px; box-shadow:0 3px 12px #19365b0a; }
+    h2 { margin:0 0 5px; font-size:19px; }
+    .hint { color:var(--muted); margin:0 0 18px; font-size:13px; }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+    label { display:flex; flex-direction:column; gap:6px; font-weight:600; font-size:13px; }
+    input,select { width:100%; padding:10px 11px; border:1px solid #b8c2cc; border-radius:7px; font:inherit; color:var(--ink); background:#fff; }
+    input:focus,select:focus { outline:2px solid #91c8ff; border-color:var(--blue); }
+    .section-label { margin:18px 0 10px; font-weight:700; color:#334e68; }
+    .actions { display:flex; gap:10px; align-items:center; margin-top:18px; flex-wrap:wrap; }
+    button { border:0; border-radius:7px; padding:10px 16px; background:var(--blue); color:#fff; font-weight:700; cursor:pointer; }
+    button.secondary { background:#eaf3fc; color:#064f91; border:1px solid #b7d8f7; }
+    button:disabled { opacity:.6; cursor:wait; }
+    .status { margin-top:14px; padding:12px 14px; border-radius:8px; white-space:pre-wrap; overflow-wrap:anywhere; background:#f2f4f7; color:#344054; }
+    .status.success { background:#ecfdf3; color:#067647; border:1px solid #abefc6; }
+    .status.error { background:#fef3f2; color:var(--red); border:1px solid #fecdca; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:8px; margin-top:16px; }
+    .table-wrap input { min-width:100px; }
+    table { border-collapse:collapse; width:100%; min-width:760px; background:#fff; }
+    th,td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); font-size:13px; }
+    th { background:#f2f6fa; color:#344054; }
+    tr:last-child td { border-bottom:0; }
+    .footnote { color:var(--muted); font-size:12px; margin:16px 0 0; }
+    @media(max-width:800px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media(max-width:540px) { .grid { grid-template-columns:1fr; } .card { padding:15px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="pageTitle">SAP Sales Order Workbench</h1>
+    <p>Node.js / Express → SAP OData V2 · Development testing</p>
+    <a class="back-link" id="workbenchLink" href="/" hidden>Back to Workbench</a>
+    <nav class="transaction-nav" aria-label="Sales order transactions">
+      <a href="/sales-order.html?mode=create">VA01 - Create</a>
+      <a href="/sales-order.html?mode=change">VA02 - Change</a>
+      <a href="/sales-order.html?mode=display">VA03 - Display</a>
+      <a id="sapNativeLink" href="/transaction.html?tcode=VA03" target="_blank" rel="noopener" hidden>Open Authentic SAP GUI</a>
+    </nav>
+  </header>
+  <main>
+    <section class="card" id="searchOrdersCard">
+      <h2 id="searchTitle">Search Sales Orders</h2>
+      <p class="hint" id="searchHint">Search calls your Node.js backend, which applies OData filters to SAP.</p>
+      <form id="searchForm">
+        <div class="grid">
+          <label>Sales Order<input name="SalesOrder" placeholder="e.g. 1228"></label>
+          <label>Sales Organization<input name="SalesOrganization" placeholder="From .env"></label>
+          <label>Sold-to Party<input name="SoldToParty" placeholder="e.g. 1000127"></label>
+          <label>Maximum rows<select name="top"><option>5</option><option selected>10</option><option>25</option><option>50</option><option>100</option></select></label>
+        </div>
+        <div class="actions"><button type="submit" id="searchButton">Search SAP</button><button type="button" class="secondary" id="clearSearch">Clear filters</button></div>
+      </form>
+      <div id="searchStatus" class="status" role="status">Ready. Click Search SAP to retrieve records.</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Sales Order</th><th>Type</th><th>Sales Org.</th><th>Channel</th><th>Division</th><th>Sold-to</th><th>Creation Date</th><th>Net Amount</th><th>Currency</th></tr></thead>
+          <tbody id="ordersTable"><tr><td colspan="9">No search performed yet.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" id="createOrderCard">
+      <h2>Create Sales Order</h2>
+      <p class="hint">Defaults come from the SAP organizational settings in .env. Confirm they are valid for your SAP system before creating an order.</p>
+      <form id="createForm">
+        <div class="section-label">Header</div>
+        <div class="grid">
+          <label>Order Type<input name="SalesOrderType" required maxlength="4"></label>
+          <label>Sales Organization<input name="SalesOrganization" required maxlength="4"></label>
+          <label>Distribution Channel<input name="DistributionChannel" required maxlength="2"></label>
+          <label>Division<input name="OrganizationDivision" required maxlength="2"></label>
+          <label>Sold-to Party<input name="SoldToParty" required maxlength="10"></label>
+          <label>Customer Reference<input name="PurchaseOrderByCustomer" id="customerReference" required maxlength="35"></label>
+        </div>
+        <div class="section-label">First Item</div>
+        <div class="grid">
+          <label>Item Number<input name="SalesOrderItem" value="000010" maxlength="6"></label>
+          <label>Material<input name="Material" required maxlength="40"></label>
+          <label>Quantity<input name="RequestedQuantity" value="1" type="number" step="0.001" min="0.001" required></label>
+          <label>Unit<input name="RequestedQuantityUnit" required maxlength="3"></label>
+          <label>Production Plant<input name="ProductionPlant" maxlength="4"></label>
+          <label>Storage Location<input name="StorageLocation" placeholder="Optional" maxlength="4"></label>
+        </div>
+        <div class="actions"><button type="submit" id="createButton">Create Sales Order in SAP</button></div>
+      </form>
+      <div id="createStatus" class="status" role="status">No order has been submitted from this page.</div>
+      <p class="footnote">Warning: creating an order writes a real business document to SAP. Do not click Create again if the result is ambiguous; first check VA03 or search by the customer reference.</p>
+    </section>
+
+    <section class="card" id="changeOrderCard" hidden>
+      <h2>Change Sales Order</h2>
+      <p class="hint">Load an existing order. Update its customer reference or an item quantity, then save that change to SAP.</p>
+      <form id="loadOrderForm">
+        <div class="grid">
+          <label>Sales Order<input name="SalesOrder" required inputmode="numeric" pattern="[0-9]{1,10}" placeholder="e.g. 1228"></label>
+        </div>
+        <div class="actions"><button type="submit" id="loadOrderButton">Load Order</button></div>
+      </form>
+      <div id="changeStatus" class="status" role="status">Enter a sales order number to load it.</div>
+      <div id="orderEditor" hidden>
+        <h3 id="orderSummary"></h3>
+        <form id="changeHeaderForm">
+          <div class="grid">
+            <label>Customer Reference<input name="PurchaseOrderByCustomer" maxlength="35"></label>
+          </div>
+          <div class="actions"><button type="submit" id="saveHeaderButton">Save Header Change</button></div>
+        </form>
+        <h3>Order Items</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Item</th><th>Material</th><th>Quantity</th><th>Unit</th><th>Plant</th><th>Action</th></tr></thead>
+            <tbody id="orderItems"><tr><td colspan="6">Load an order to view its items.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    'use strict';
+    const byId = (id) => document.getElementById(id);
+    const showStatus = (element, message, kind) => {
+      element.textContent = message;
+      element.className = `status${kind ? ` ${kind}` : ''}`;
+    };
+
+    const pageMode = new URLSearchParams(window.location.search).get('mode') || 'workbench';
+    const displayMode = pageMode === 'display';
+    const createMode = pageMode === 'create';
+    const changeMode = pageMode === 'change';
+    if (displayMode || createMode || changeMode) byId('workbenchLink').hidden = false;
+    const nativeTcode = { display: 'VA03', create: 'VA01', change: 'VA02' }[pageMode];
+    if (nativeTcode) {
+      byId('sapNativeLink').href = `/transaction.html?tcode=${nativeTcode}`;
+      byId('sapNativeLink').hidden = false;
+    }
+    if (displayMode) {
+      document.title = 'VA03 | Display Sales Orders';
+      byId('pageTitle').textContent = 'VA03 - Display Sales Orders';
+      document.querySelector('header p').textContent = 'Read-only lookup of sales orders from SAP';
+      byId('searchTitle').textContent = 'Display Sales Order';
+      byId('searchHint').textContent = 'Enter a sales order number or add filters to retrieve matching records from SAP.';
+      byId('searchStatus').textContent = 'Enter a sales order number, then choose Display in SAP.';
+      byId('searchButton').textContent = 'Display in SAP';
+      byId('createOrderCard').hidden = true;
+      byId('searchForm').elements.SalesOrganization.value = '';
+    } else if (createMode) {
+      document.title = 'VA01 | Create Sales Order';
+      byId('pageTitle').textContent = 'VA01 - Create Sales Order';
+      document.querySelector('header p').textContent = 'Create a sales order in SAP';
+      byId('searchOrdersCard').hidden = true;
+    } else if (changeMode) {
+      document.title = 'VA02 | Change Sales Order';
+      byId('pageTitle').textContent = 'VA02 - Change Sales Order';
+      document.querySelector('header p').textContent = 'Load and update an existing sales order in SAP';
+      byId('searchOrdersCard').hidden = true;
+      byId('createOrderCard').hidden = true;
+      byId('changeOrderCard').hidden = false;
+    }
+
+    function newCustomerReference() {
+      const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+      return `WEB-${stamp}`.slice(0, 35);
+    }
+    byId('customerReference').value = newCustomerReference();
+
+    requestJson('/api/sales-orders/config').then((config) => {
+      const defaults = {
+        SalesOrderType: config.salesOrderType,
+        SalesOrganization: config.salesOrganization,
+        DistributionChannel: config.distributionChannel,
+        OrganizationDivision: config.division,
+        SoldToParty: config.soldToParty,
+        Material: config.material,
+        RequestedQuantityUnit: config.unit,
+        ProductionPlant: config.plant,
+        StorageLocation: config.storageLocation,
+      };
+      for (const [name, value] of Object.entries(defaults)) {
+        byId('createForm').elements[name].value = value || '';
+      }
+      byId('searchForm').elements.SalesOrganization.value = config.salesOrganization || '';
+    }).catch(() => {
+      // Empty defaults remain editable; the API will report missing SAP settings.
+    });
+
+    function addCell(row, value) {
+      const cell = document.createElement('td');
+      cell.textContent = value === null || value === undefined ? '' : String(value);
+      row.appendChild(cell);
+    }
+
+    let loadedOrder = null;
+    async function requestJson(url, options = {}) {
+      const response = await fetch(url, { ...options, headers: { Accept: 'application/json', ...(options.headers || {}) } });
+      let data = {};
+      try { data = await response.json(); } catch (_) {}
+      if (!response.ok) throw new Error(data.details || data.error || `HTTP ${response.status}`);
+      return data;
+    }
+
+    function renderOrderItems(items) {
+      const tbody = byId('orderItems');
+      tbody.replaceChildren();
+      if (!items.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 6;
+        cell.textContent = 'SAP returned no editable items for this order.';
+        row.appendChild(cell);
+        tbody.appendChild(row);
+        return;
+      }
+
+      items.forEach((item) => {
+        const row = document.createElement('tr');
+        addCell(row, item.SalesOrderItem);
+        addCell(row, item.Material);
+        const quantityCell = document.createElement('td');
+        const quantity = document.createElement('input');
+        quantity.type = 'number';
+        quantity.min = '0.001';
+        quantity.step = '0.001';
+        quantity.value = String(item.RequestedQuantity ?? '');
+        quantity.setAttribute('aria-label', `Requested quantity for item ${item.SalesOrderItem}`);
+        quantityCell.appendChild(quantity);
+        row.appendChild(quantityCell);
+        addCell(row, item.RequestedQuantityUnit);
+        addCell(row, item.ProductionPlant);
+        const actionCell = document.createElement('td');
+        const saveButton = document.createElement('button');
+        saveButton.type = 'button';
+        saveButton.className = 'secondary';
+        saveButton.textContent = 'Save quantity';
+        saveButton.addEventListener('click', async () => {
+          const nextQuantity = Number(quantity.value);
+          if (!Number.isFinite(nextQuantity) || nextQuantity <= 0) {
+            showStatus(byId('changeStatus'), 'Enter a quantity greater than zero.', 'error');
+            quantity.focus();
+            return;
+          }
+          if (String(nextQuantity) === String(Number(item.RequestedQuantity))) {
+            showStatus(byId('changeStatus'), `Item ${item.SalesOrderItem} quantity has no changes.`, '');
+            return;
+          }
+          if (!window.confirm(`Save the new quantity for sales order ${loadedOrder.order.SalesOrder}, item ${item.SalesOrderItem}?`)) return;
+          saveButton.disabled = true;
+          showStatus(byId('changeStatus'), `Saving item ${item.SalesOrderItem} to SAP...`, '');
+          try {
+            await requestJson(`/api/sales-orders/${encodeURIComponent(loadedOrder.order.SalesOrder)}/items/${encodeURIComponent(item.SalesOrderItem)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ RequestedQuantity: nextQuantity }),
+            });
+            item.RequestedQuantity = String(nextQuantity);
+            showStatus(byId('changeStatus'), `Item ${item.SalesOrderItem} quantity saved in SAP.`, 'success');
+          } catch (error) {
+            showStatus(byId('changeStatus'), `Quantity update failed: ${error.message}`, 'error');
+          } finally {
+            saveButton.disabled = false;
+          }
+        });
+        actionCell.appendChild(saveButton);
+        row.appendChild(actionCell);
+        tbody.appendChild(row);
+      });
+    }
+
+    byId('loadOrderForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = byId('loadOrderButton');
+      const salesOrder = String(new FormData(event.currentTarget).get('SalesOrder') || '').trim();
+      button.disabled = true;
+      byId('orderEditor').hidden = true;
+      showStatus(byId('changeStatus'), `Loading sales order ${salesOrder} from SAP...`, '');
+      try {
+        loadedOrder = await requestJson(`/api/sales-orders/${encodeURIComponent(salesOrder)}`);
+        const order = loadedOrder.order;
+        byId('orderSummary').textContent = `Order ${order.SalesOrder} · ${order.SalesOrderType || ''} · Sold-to ${order.SoldToParty || ''}`;
+        byId('changeHeaderForm').elements.PurchaseOrderByCustomer.value = order.PurchaseOrderByCustomer || '';
+        byId('orderEditor').hidden = false;
+        renderOrderItems(Array.isArray(loadedOrder.items) ? loadedOrder.items : []);
+        showStatus(byId('changeStatus'), `Sales order ${order.SalesOrder} loaded. Save each change to write it to SAP.`, 'success');
+      } catch (error) {
+        loadedOrder = null;
+        showStatus(byId('changeStatus'), `Could not load sales order: ${error.message}`, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    byId('changeHeaderForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!loadedOrder) return;
+      const button = byId('saveHeaderButton');
+      const nextReference = String(new FormData(event.currentTarget).get('PurchaseOrderByCustomer') || '').trim();
+      const currentReference = String(loadedOrder.order.PurchaseOrderByCustomer || '').trim();
+      if (nextReference === currentReference) {
+        showStatus(byId('changeStatus'), 'Customer reference has no changes.', '');
+        return;
+      }
+      if (!window.confirm(`Save the customer reference change for sales order ${loadedOrder.order.SalesOrder}?`)) return;
+      button.disabled = true;
+      showStatus(byId('changeStatus'), 'Saving customer reference to SAP...', '');
+      try {
+        await requestJson(`/api/sales-orders/${encodeURIComponent(loadedOrder.order.SalesOrder)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ PurchaseOrderByCustomer: nextReference }),
+        });
+        loadedOrder.order.PurchaseOrderByCustomer = nextReference;
+        showStatus(byId('changeStatus'), 'Customer reference saved in SAP.', 'success');
+      } catch (error) {
+        showStatus(byId('changeStatus'), `Header update failed: ${error.message}`, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    byId('searchForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = byId('searchButton');
+      const formData = new FormData(event.currentTarget);
+      const params = new URLSearchParams();
+      for (const field of ['SalesOrder', 'SalesOrganization', 'SoldToParty']) {
+        const value = String(formData.get(field) || '').trim();
+        if (value) params.set(field, value);
+      }
+      params.set('top', String(formData.get('top') || '10'));
+      button.disabled = true;
+      showStatus(byId('searchStatus'), 'Searching SAP…', '');
+      try {
+        const response = await fetch(`/api/sales-orders?${params.toString()}`, { headers: { Accept: 'application/json' } });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.details || data.error || `HTTP ${response.status}`);
+        const rows = Array.isArray(data.value) ? data.value : [];
+        const tbody = byId('ordersTable');
+        tbody.replaceChildren();
+        if (!rows.length) {
+          const tr = document.createElement('tr');
+          const td = document.createElement('td'); td.colSpan = 9; td.textContent = 'No matching Sales Orders found.'; tr.appendChild(td); tbody.appendChild(tr);
+        } else {
+          rows.forEach((order) => {
+            const tr = document.createElement('tr');
+            ['SalesOrder','SalesOrderType','SalesOrganization','DistributionChannel','OrganizationDivision','SoldToParty','CreationDate','TotalNetAmount','TransactionCurrency'].forEach((key) => addCell(tr, order[key]));
+            tbody.appendChild(tr);
+          });
+        }
+        showStatus(byId('searchStatus'), `${rows.length} Sales Order(s) returned by SAP.`, 'success');
+      } catch (error) {
+        showStatus(byId('searchStatus'), `Search failed: ${error.message}`, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    byId('clearSearch').addEventListener('click', () => {
+      const form = byId('searchForm');
+      form.elements.SalesOrder.value = '';
+      form.elements.SalesOrganization.value = '';
+      form.elements.SoldToParty.value = '';
+      form.elements.top.value = '10';
+      byId('ordersTable').replaceChildren();
+      const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 9; td.textContent = 'Filters cleared.'; tr.appendChild(td); byId('ordersTable').appendChild(tr);
+      showStatus(byId('searchStatus'), 'Filters cleared.', '');
+    });
+
+    byId('createForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = byId('createButton');
+      if (button.disabled) return;
+      if (!window.confirm('This will create a real sales order in SAP. Continue?')) return;
+      const formData = new FormData(event.currentTarget);
+      const stringValue = (name) => String(formData.get(name) || '').trim();
+      const item = {
+        SalesOrderItem: stringValue('SalesOrderItem'),
+        Material: stringValue('Material'),
+        RequestedQuantity: stringValue('RequestedQuantity'),
+        RequestedQuantityUnit: stringValue('RequestedQuantityUnit'),
+      };
+      if (stringValue('ProductionPlant')) item.ProductionPlant = stringValue('ProductionPlant');
+      if (stringValue('StorageLocation')) item.StorageLocation = stringValue('StorageLocation');
+      const payload = {
+        SalesOrderType: stringValue('SalesOrderType'),
+        SalesOrganization: stringValue('SalesOrganization'),
+        DistributionChannel: stringValue('DistributionChannel'),
+        OrganizationDivision: stringValue('OrganizationDivision'),
+        SoldToParty: stringValue('SoldToParty'),
+        PurchaseOrderByCustomer: stringValue('PurchaseOrderByCustomer'),
+        to_Item: [item],
+      };
+
+      button.disabled = true;
+      showStatus(byId('createStatus'), 'Sending creation request to SAP. Do not resubmit while the request is in progress…', '');
+      try {
+        const response = await fetch('/api/sales-orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.details || data.error || `HTTP ${response.status}`);
+        const confirmation = data.salesOrder
+          ? `Created successfully. Sales Order: ${data.salesOrder}\nCustomer Reference: ${data.customerReference || payload.PurchaseOrderByCustomer}\nStatus: ${data.status || response.status}. Verify the order in VA03.`
+          : `SAP returned success (${data.status || response.status}), but the order number was not identified in the response. Search by customer reference or check VA03 before retrying.`;
+        showStatus(byId('createStatus'), confirmation, 'success');
+        // Rotate the reference for a future intentional creation. Never auto-submit again.
+        byId('customerReference').value = newCustomerReference();
+      } catch (error) {
+        showStatus(byId('createStatus'), `Creation request failed: ${error.message}\nIf the connection timed out after sending, check VA03 and search by customer reference before retrying.`, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

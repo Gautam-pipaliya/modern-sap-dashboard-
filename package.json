@@ -1,0 +1,26 @@
+{
+  "name": "sap-web-dashboard",
+  "version": "1.0.0",
+  "description": "Peak Level SAP Developer Workbench for ABAP, OData, and integration",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node --use-system-ca backend/server.js",
+    "demo": "node --use-system-ca backend/start-demo.js",
+    "dev": "nodemon --exec \"node --use-system-ca\" backend/server.js",
+    "check": "node --check backend/server.js && node scripts/check-frontend.js"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.20.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}

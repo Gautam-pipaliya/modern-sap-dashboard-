@@ -1,0 +1,10 @@
+ROOT CAUSE:
+The frontend sends { name, description, package, programType, transport } correctly.
+The previous server registered all API routes BEFORE express.json(), so req.body was
+undefined. The backend therefore received no name and returned:
+"Program name is required."
+
+FIX:
+WebGUI proxy first -> express.json()/urlencoded() -> API routes.
+
+Replace backend/server.js with server-create-fixed.js, restart npm run dev, then test Create again.

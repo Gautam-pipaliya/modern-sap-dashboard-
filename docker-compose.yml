@@ -1,0 +1,76 @@
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      CHATBOT_API_URL: http://chatbot:8000/api/chat
+    ports:
+      - "127.0.0.1:${PUBLIC_PORT:-3000}:3000"
+    depends_on:
+      chatbot:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  chatbot:
+    build:
+      context: .
+      dockerfile: Dockerfile.chatbot
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_TIMEOUT_SECONDS: ${OPENAI_TIMEOUT_SECONDS:-60}
+      CHATGPT_API_KEY: ${CHATGPT_API_KEY:-}
+      CHATGPT_MODEL: ${CHATGPT_MODEL:-}
+      CHATGPT_API_BASE_URL: ${CHATGPT_API_BASE_URL:-}
+      COPILOT_HOST: 0.0.0.0
+      COPILOT_PORT: 8000
+      COPILOT_MEMORY_DB: /app/data/copilot_memory.sqlite3
+    volumes:
+      - copilot_memory:/app/data
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  copilot_memory:

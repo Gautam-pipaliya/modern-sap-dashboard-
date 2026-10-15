@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Check backend and frontend JavaScript syntax
+        run: npm run check
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile chatbot service
+        run: python -m py_compile app.py
+
+      - name: Validate Compose configuration
+        run: |
+          cp .env.example .env
+          SAP_CA_CERT_HOST_PATH=/tmp/sap-ca.pem docker compose -f docker-compose.yml -f docker-compose.ca.yml config --quiet
+
+      - name: Build dashboard image
+        run: docker build --file Dockerfile --tag sap-web-dashboard:ci .
+
+      - name: Build chatbot image
+        run: docker build --file Dockerfile.chatbot --tag sap-web-dashboard-chatbot:ci .

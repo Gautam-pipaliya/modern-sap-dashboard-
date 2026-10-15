@@ -1,0 +1,9 @@
+services:
+  dashboard:
+    environment:
+      SAP_CA_CERT: /run/secrets/sap-ca.pem
+    volumes:
+      - type: bind
+        source: "${SAP_CA_CERT_HOST_PATH:?Set SAP_CA_CERT_HOST_PATH to the absolute path of the SAP CA PEM file}"
+        target: /run/secrets/sap-ca.pem
+        read_only: true
