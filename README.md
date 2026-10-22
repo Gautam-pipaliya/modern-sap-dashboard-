@@ -2,7 +2,7 @@
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Gautam-pipaliya/modern-sap-dashboard-)
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for live hosting setup and required SAP/OpenAI secrets.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for live hosting setup and required SAP/AI provider secrets.
 
 A browser workbench for SAP ABAP development, SAP Gateway/OData exploration, and SAP GUI for HTML. The application keeps SAP credentials on the server and separates repository development through ADT, business APIs through OData, and classic transactions through WebGUI.
 
