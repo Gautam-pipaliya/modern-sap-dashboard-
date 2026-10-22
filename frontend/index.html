@@ -3839,6 +3839,8 @@
         }
 </style>
 
+    <link rel="stylesheet" href="/css/peak-level.css">
+
 </head>
 
 
@@ -3901,6 +3903,8 @@
 
         <button
             class="icon-btn"
+            type="button"
+            aria-label="Notifications"
             onclick="app.toast('No new notifications')"
         >
             ♢
@@ -3909,6 +3913,8 @@
 
         <button
             class="icon-btn"
+            type="button"
+            aria-label="Help"
             onclick="app.toast('Help center')"
         >
             ?
@@ -3923,9 +3929,11 @@
         </button>
 
 
-        <div
+        <button
             class="connection"
+            type="button"
             id="connectionStatus"
+            aria-label="Open SAP connection status"
             onclick="app.showConnection()"
             title="Live SAP connection health"
         >
@@ -3936,7 +3944,7 @@
 
             <span>Checking</span>
 
-        </div>
+        </button>
 
 
         <div class="user">
@@ -3980,6 +3988,7 @@
 
             <button
                 class="new-object"
+                aria-label="Create a new SAP object"
                 onclick="app.newObject()"
             >
                 + &nbsp; New Object
@@ -4963,11 +4972,11 @@
                 <section class="dashboard-hero" aria-labelledby="dashboardHeroTitle">
                     <div class="hero-copy">
                         <div class="hero-eyebrow"><i class="hero-eyebrow-dot"></i> PEAK LEVEL <span> / </span> SAP DEVELOPER WORKBENCH</div>
-                        <h2 id="dashboardHeroTitle">Your SAP development, at peak level.</h2>
-                        <p>One command center for ABAP development, Dictionary objects, OData integrations, and live SAP transactions.</p>
+                        <h2 id="dashboardHeroTitle">Build, explore, and extend SAP.</h2>
+                        <p>ABAP development, Dictionary objects, OData services, and SAP GUI access in one focused workspace.</p>
                         <div class="hero-actions">
-                            <button class="btn btn-light" onclick="app.open('transactions')">Browse T-code directory <span aria-hidden="true">&#8594;</span></button>
-                            <button class="btn btn-hero-ghost" onclick="document.getElementById('globalSearch')?.focus()">Jump to command <kbd>Ctrl+/</kbd></button>
+                            <button class="btn btn-light" onclick="app.open('se38')">Open ABAP Editor <span aria-hidden="true">&#8594;</span></button>
+                            <button class="btn btn-hero-ghost" onclick="app.open('transactions')">Explore transactions</button>
                         </div>
                     </div>
                     <div class="hero-art" aria-hidden="true">
