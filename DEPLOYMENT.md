@@ -15,7 +15,7 @@ During Blueprint setup, enter these values in Render's environment settings:
 
 Keep `SAP_TLS_REJECT_UNAUTHORIZED=true`. If SAP uses a private CA, upload its approved PEM file in the service's **Environment → Secret Files** as `sap-server.pem`, then set `SAP_CA_CERT` to `/etc/secrets/sap-server.pem`. Leave `SAP_CA_CERT` unset when the SAP certificate chains to a public CA trusted by the system.
 
-The public dashboard uses one shared SAP backend identity and Basic authentication. This application does not include organization SSO or role-based access control. Before relying on SAP features, confirm the SAP HTTPS endpoint is reachable from Render and that SAP Basis permits the deployment's outbound traffic.
+The public dashboard uses a custom sign-in page with server-side sessions and one shared SAP backend identity. This application does not include organization SSO or role-based access control. Before relying on SAP features, confirm the SAP HTTPS endpoint is reachable from Render and that SAP Basis permits the deployment's outbound traffic.
 
 After the service reports **Live**, open its `onrender.com` URL, sign in, and check `/api/health`. Verify chatbot responses and SAP connectivity separately; an HTTP health response alone does not prove that provider credentials or SAP authorizations work.
 

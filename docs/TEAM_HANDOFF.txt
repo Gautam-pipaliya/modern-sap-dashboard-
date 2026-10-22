@@ -1,0 +1,267 @@
+PEAK LEVEL SAP DEVELOPER WORKBENCH
+TEAM TECHNICAL HANDOFF
+======================================================================
+
+Purpose
+-------
+This note explains what the project uses, how a browser request reaches SAP,
+how the public deployment is put together, and what the current SAP connection
+message means. It is safe to share with project teammates. It intentionally
+does not contain passwords, API keys, private certificate data, or .env values.
+
+
+TEAM SUMMARY (COPY/PASTE)
+------------------------
+Peak Level SAP Developer Workbench is a web application deployed on Render.
+The user interface is HTML, CSS, and browser JavaScript served by a Node.js /
+Express server. That server acts as the same-origin backend for the browser and
+forwards SAP requests over HTTPS using SAP credentials kept in server-side
+environment settings. SAP GUI for HTML is streamed through a server-side proxy,
+so the browser displays the real SAP WebGUI response inside the workbench.
+The Python FastAPI chatbot runs as a private companion service in the same
+Render container. Its AI key is kept on the server. TLS certificate checking
+is enabled for SAP.
+
+The public website being available and SAP being reachable are separate
+things. The latest SAP Connection Center screen reports that the SAP HTTPS
+certificate is self-signed/untrusted. That means the workbench currently
+cannot establish a trusted SAP connection. SAP Basis needs to provide the
+approved CA certificate chain and confirm that the endpoint certificate name
+matches the configured SAP address. The SAP endpoint must also be reachable
+from the Render service over the network. Do not turn off TLS verification.
+
+
+WHAT THE PROJECT USES
+---------------------
+Frontend
+  - Plain HTML, CSS, and JavaScript in frontend/; no frontend build framework
+    is required.
+  - frontend/index.html is the main workbench and frontend/transaction.html
+    hosts the SAP GUI for HTML transaction view.
+  - frontend/login.html is the Peak Level dashboard sign-in page.
+  - Browser calls same-origin /api routes on the Node server. SAP passwords
+    and AI provider keys are not placed in browser JavaScript.
+
+Dashboard and SAP integration backend
+  - Node.js 22.19 or later, Express 5, Axios, and Node's HTTPS/TLS modules.
+  - backend/server.js serves the frontend, checks dashboard sessions, exposes
+    workbench API routes, calls SAP APIs, and proxies SAP GUI for HTML.
+  - SAP API calls use HTTPS with certificate verification enabled. The app
+    trusts Node/system certificates plus configured SAP CA material.
+  - SAP API calls use an explicitly configured SAP_HTTP_PROXY if needed.
+    SAP GUI for HTML uses the direct server-to-SAP connection in this code.
+
+ABAP Copilot
+  - Python 3 with FastAPI, Uvicorn, the OpenAI-compatible Python client,
+    HTTPX, and file readers (including pypdf).
+  - app.py provides the private chatbot API, optional document/image parsing,
+    AI provider calls, and SQLite-backed memory.
+  - The chatbot supports a configured Gemini, OpenAI, or compatible provider.
+    Provider selection and key are server configuration, not browser config.
+
+Deployment
+  - Docker builds the app. Dockerfile.render and scripts/start-render.sh start
+    the public Node dashboard and private Python chatbot in one Render service.
+  - render.yaml defines a Render Blueprint using the Free web service plan.
+  - The chatbot listens on 127.0.0.1:8000 inside the container and has no
+    public endpoint. The dashboard calls it at /api/chat through the internal
+    loopback address.
+  - Docker Compose is also provided for a local/self-managed deployment.
+
+
+HOW A USER GETS THE SAP SCREEN
+-----------------------------
+1. A user opens the Render website and signs in with DASHBOARD_USERNAME and
+   DASHBOARD_PASSWORD. These are dashboard credentials, not SAP credentials.
+2. The browser requests an SAP workspace or transaction from the dashboard.
+3. For SAP API features (ADT, Dictionary, OData, and business operations), the
+   browser calls a same-origin /api endpoint. backend/server.js makes the
+   outbound HTTPS request to SAP and adds the configured SAP client and SAP
+   credentials on the server side.
+4. For a transaction, the browser loads a same-origin /sap/... URL. The Node
+   server forwards that request to the configured SAP WebGUI path:
+   /sap/bc/gui/sap/its/webgui. It streams SAP's HTML, scripts, images, and
+   form traffic back through the workbench origin. This is why the actual SAP
+   screen can appear inside the transaction page without exposing SAP login
+   credentials to the browser.
+5. SAP determines which T-codes, data, and write actions the configured SAP
+   account may use. The workbench does not grant SAP authorizations.
+
+Network path:
+
+  User browser --HTTPS--> Render workbench --HTTPS--> configured SAP system
+        |                       |
+        |                       +-- private loopback --> Python chatbot
+        +-- sees the workbench and same-origin proxied SAP response
+
+The browser does not create a VPN connection to SAP. No VPN tunnel or private
+network link is configured by this repository. The SAP server must be
+reachable from the Render service network. If SAP is only reachable inside a
+company network, the network/SAP administrators must provide an approved,
+secure route or an externally reachable SAP gateway and configure firewall
+rules accordingly. Do not publish SAP credentials or an unrestricted SAP
+endpoint to solve a reachability problem.
+
+
+CONFIGURATION (NAMES ONLY; VALUES ARE SECRETS)
+---------------------------------------------
+Dashboard sign-in:
+  DASHBOARD_USERNAME
+  DASHBOARD_PASSWORD
+
+SAP server connection:
+  SAP_BASE_URL       HTTPS origin for the SAP server (include the correct port)
+  SAP_CLIENT         SAP client number
+  SAP_USERNAME       Server-side SAP technical/user account
+  SAP_PASSWORD       Password for that SAP account
+  SAP_CA_CERT        Approved trusted root/intermediate CA PEM or its file path
+  SAP_TLS_SERVERNAME DNS name present in the SAP certificate, if different from
+                     the hostname in SAP_BASE_URL
+  SAP_HTTP_PROXY     Optional explicit proxy for SAP API traffic only
+  SAP_TLS_REJECT_UNAUTHORIZED=true (keep enabled)
+
+AI chatbot (optional):
+  AI_PROVIDER, AI_API_KEY, AI_MODEL, AI_BASE_URL
+  AI_TIMEOUT_SECONDS, AI_TRUST_ENV, AI_MAX_OUTPUT_TOKENS,
+  AI_MAX_CONCURRENT_REQUESTS
+
+Runtime and internal chatbot:
+  NODE_ENV, HOST, PORT, CHATBOT_API_URL
+  COPILOT_HOST, COPILOT_PORT, COPILOT_MEMORY_DB
+
+Local configuration belongs in .env, which is excluded from Git. Render
+configuration belongs in the Render service's environment settings and Secret
+Files. Never commit .env, passwords, provider keys, or private key material.
+The project packages certs/sap-server.pem in its Render Docker image; that
+file must contain an approved CA certificate suitable for trusting the SAP
+server chain. A server's self-signed leaf certificate is not automatically
+the approved root/intermediate CA requested by SAP Basis.
+
+
+WHAT THE CONNECTION CHECK MEANS
+-------------------------------
+The dashboard health endpoint /api/health only confirms the Node dashboard is
+running. It does not prove SAP, AI provider access, SAP authorizations, or
+WebGUI are working.
+
+The SAP Connection Center separately checks the configured endpoint's ADT,
+Gateway/OData, and SAP GUI for HTML services. A certificate trust error means
+the TCP/TLS request got far enough to fail certificate validation. It is not
+fixed by changing the dashboard password or the SAP client number. The check
+must succeed from the deployed Render service, not just from a developer's
+laptop.
+
+The screenshots provided for this project showed the SAP endpoint configured
+as 122.160.154.129 on port 44371 for client 220 and the error "self-signed
+certificate." Those are diagnostic values from the screenshot, not secrets.
+Confirm that these are still the intended system details before sharing them
+as current configuration.
+
+To resolve the current trust issue:
+  1. Ask SAP Basis for the approved root and any intermediate CA certificates
+     in PEM format, and the DNS name/SAN that the SAP HTTPS certificate covers.
+  2. Confirm SAP_BASE_URL, port, and SAP_TLS_SERVERNAME match the intended SAP
+     host and certificate name.
+  3. Provide the CA using SAP_CA_CERT (Render Secret File or approved PEM
+     environment value), or have the approved CA installed in the runtime trust
+     store. Keep SAP_TLS_REJECT_UNAUTHORIZED=true.
+  4. Confirm the Render service can resolve and reach the SAP host and port.
+     Ask the network team to allow the required outbound path from Render.
+  5. Restart/redeploy the service after configuration changes and run the
+     connection check again. Verify ADT, Gateway/OData, and WebGUI separately.
+  6. If TLS succeeds but WebGUI is still unavailable, ask SAP Basis to activate
+     /sap/bc/gui/sap/its/webgui in SICF and authorize the configured SAP user.
+
+Other common diagnostics:
+  - Connection refused / timeout: endpoint or port is wrong, SAP service is
+    down, or network/firewall routing is missing.
+  - Certificate name mismatch: use the hostname covered by the certificate or
+    configure SAP_TLS_SERVERNAME with the matching DNS name.
+  - HTTP 401: check SAP credentials and authentication requirements.
+  - HTTP 403: the SAP user lacks service or transaction authorization.
+  - WebGUI path unavailable: check SICF service activation and WebGUI rights.
+  - OData service missing: ask SAP Gateway admin to activate/register it and
+    verify authorizations.
+  - AI reply unavailable while SAP works: check provider key/model/quota and
+    the private chatbot health/logs; AI is optional to SAP workbench functions.
+
+
+AUTHENTICATION AND SECURITY MODEL
+---------------------------------
+- The Peak Level sign-in uses a custom server-side session cookie. The password
+  is checked against DASHBOARD_USERNAME and DASHBOARD_PASSWORD. Successful
+  sessions are held in the Node process memory and expire after 12 hours.
+- A fresh top-level page visit or browser reload asks for dashboard sign-in;
+  navigation inside an already open workbench remains authenticated. There is
+  also a Sign out action.
+- Dashboard authentication is shared access for this deployment. It is not
+  organization SSO and it does not provide per-person roles or audit identity.
+- One configured SAP identity is used for SAP requests made by all dashboard
+  visitors. SAP authorizations therefore apply to that shared identity.
+- TLS is required for the SAP base URL, and certificate validation must stay
+  enabled. A private CA should be trusted through its approved CA chain.
+- The app has same-origin checks for browser write requests. This does not
+  replace account security, SAP authorization, or an organizational review.
+- Protect dashboard credentials and SAP credentials as separate secrets.
+
+
+WHAT IS AND IS NOT LIVE
+-----------------------
+The Render URL can serve the Peak Level workbench even while SAP is
+unavailable. Static UI, local browser drafts, and some documentation/catalog
+features can still render. Live SAP reads, updates, and transactions require
+the backend-to-SAP network path, trusted TLS, active SAP services, valid
+credentials, and sufficient SAP authorizations.
+
+The project also has a DEMO_MODE for a clearly labeled read-only UI demo using
+fictional data. Demo mode is not a live SAP connection. Local SE38 drafts are
+stored in that browser and are not SAP repository objects until explicitly
+sent through a connected SAP workflow.
+
+Render Free services may sleep when idle and have ephemeral filesystems. In
+the Render Blueprint, chatbot SQLite memory is placed under /tmp and can be
+lost on sleep/restart/redeploy. Do not treat that memory or local browser
+drafts as durable backups.
+
+
+USEFUL PROJECT FILES
+--------------------
+  README.md                    Project summary and quick start
+  DEPLOYMENT.md                Render, Docker, SAP, TLS, and AI configuration
+  docs/SAP_CHATBOT_GUIDE.md    Chatbot, document upload, ABAP generation, memory
+  docs/TEAM_HANDOFF.txt       This technical handoff
+  frontend/                    Browser pages, styles, and JavaScript
+  backend/server.js            Express app, SAP APIs, authentication, WebGUI
+  backend/sales-orders.js      Sales order API routes
+  app.py                       Private FastAPI ABAP Copilot
+  render.yaml                  Render Blueprint and runtime environment names
+  Dockerfile.render            Combined Render container image
+  scripts/start-render.sh      Starts Node and private Python chatbot processes
+  .env.example                 Names and examples; copy to a private .env
+
+
+RUNNING THE PROJECT
+-------------------
+Local presentation/demo:
+  npm run demo
+  Open http://127.0.0.1:3000. Demo data is fictional/read-only.
+
+Local live development:
+  Configure a private .env with the required dashboard/SAP settings, then run:
+  npm start
+
+Docker Compose:
+  Configure .env, then run:
+  docker compose up --build -d
+
+Public service:
+  Render builds the Render Dockerfile from the GitHub repository when the
+  Blueprint is deployed or a connected branch update is deployed. Set secrets
+  in Render's environment/secret-file configuration, then use the assigned
+  onrender.com URL. Check /api/health for dashboard process status and use the
+  in-app SAP Connection Center to verify the separate SAP path.
+
+See README.md and DEPLOYMENT.md for the current detailed deployment steps.
+
+======================================================================
+End of handoff
