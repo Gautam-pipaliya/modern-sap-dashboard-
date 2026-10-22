@@ -3779,6 +3779,71 @@
             *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
         }
 
+        /* Command center homepage refresh */
+        .dashboard-hero {
+            min-height: 224px;
+            margin-bottom: 18px;
+            padding: 30px 38px;
+            border-radius: 10px;
+            background: radial-gradient(ellipse at 83% 12%, rgba(40, 161, 186, .3), transparent 31%), linear-gradient(112deg, #0b2b48 0%, #104f79 57%, #116b83 100%);
+            box-shadow: 0 12px 30px rgba(12, 47, 73, .14);
+        }
+        .dashboard-hero::before { opacity: .16; background-size: 32px 32px; }
+        .dashboard-hero::after { display: block; right: 8%; top: -300px; }
+        .hero-copy { max-width: 690px; }
+        .hero-eyebrow { gap: 9px; margin-bottom: 12px; color: #b5ddf2; font-size: 9px; letter-spacing: 1px !important; }
+        .hero-eyebrow span { color: rgba(211, 237, 249, .52); }
+        .hero-eyebrow-dot { flex: 0 0 7px; }
+        .dashboard-hero h2 { max-width: 620px; font-size: clamp(27px, 2.8vw, 36px); letter-spacing: -.8px !important; }
+        .dashboard-hero p { max-width: 585px; font-size: 12px; }
+        .hero-actions { gap: 9px; margin-top: 18px; }
+        .btn-light { min-height: 36px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+        .btn-hero-ghost { min-height: 36px; border-radius: 5px; font-size: 10px; }
+        .btn-hero-ghost kbd { padding: 2px 5px; border: 1px solid rgba(255,255,255,.25); border-radius: 3px; color: #d5eafa; font: inherit; font-size: 8px; }
+        .hero-art { display: grid !important; }
+        .hero-core { border-radius: 21px; background: linear-gradient(145deg, rgba(255,255,255,.24), rgba(255,255,255,.06)); }
+        .transaction-launcher { border-radius: 8px; box-shadow: 0 4px 15px rgba(28, 56, 79, .045); }
+        .transaction-launcher .panel-header { min-height: 66px; padding: 0 19px; }
+        .transaction-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); border-top-color: #e8eef3; }
+        .transaction-shortcut { min-height: 78px; gap: 12px; padding: 12px 15px; transition: background-color .16s ease, box-shadow .16s ease; }
+        .transaction-shortcut:nth-child(4n) { border-right: 0; }
+        .transaction-shortcut:nth-child(n+5) { border-top: 1px solid #e8eef3; }
+        .transaction-shortcut:hover { position: relative; z-index: 1; background: #f5faff; box-shadow: inset 0 0 0 1px #c9deee; }
+        .transaction-code { width: 43px; height: 36px; flex-basis: 43px; border-radius: 6px; background: #edf6fd; }
+        .transaction-copy strong { font-size: 11px; }
+        .transaction-copy small { font-size: 9px; }
+        .dashboard-columns { gap: 16px; }
+        .dashboard-panel { overflow: hidden; border-radius: 8px; box-shadow: 0 4px 15px rgba(28, 56, 79, .045); }
+        .dashboard-panel .panel-header { min-height: 66px; padding: 0 19px; }
+        .dashboard-panel .panel-title { font-size: 13px; }
+        .system-summary { padding-top: 16px; }
+        .status-pill { border-radius: 999px; }
+        .system-checks { border-radius: 7px; }
+        .refresh-status { font-size: 17px; }
+        @media (max-width: 1100px) {
+            .transaction-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .transaction-shortcut:nth-child(4n) { border-right: 1px solid #e2e8ed; }
+            .transaction-shortcut:nth-child(3n) { border-right: 0; }
+            .transaction-shortcut:nth-child(n+4) { border-top: 1px solid #e8eef3; }
+            .transaction-shortcut:nth-child(n+5) { border-top: 1px solid #e8eef3; }
+        }
+        @media (max-width: 850px) {
+            .dashboard-hero { padding: 26px; }
+            .hero-art { width: 190px; flex-basis: 190px; transform: scale(.84); }
+        }
+        @media (max-width: 600px) {
+            .dashboard-hero { min-height: 0; padding: 22px 18px; }
+            .dashboard-hero h2 { font-size: 25px; }
+            .hero-art { display: none !important; }
+            .hero-actions { align-items: stretch; }
+            .hero-actions .btn { justify-content: center; }
+            .transaction-launcher .panel-header { min-height: 0; padding: 13px; }
+            .transaction-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .transaction-shortcut { min-height: 66px; padding: 9px; }
+            .transaction-shortcut:nth-child(3n), .transaction-shortcut:nth-child(4n) { border-right: 0; }
+            .transaction-shortcut:nth-child(odd) { border-right: 1px solid #e2e8ed; }
+            .transaction-shortcut:nth-child(n+3) { border-top: 1px solid #e8eef3; }
+        }
 </style>
 
 </head>
@@ -4890,20 +4955,28 @@
 
         dashboard() {
             this.setContent(`
-                <div class="page-head dashboard-page-head">
-                    <div>
-                        <div class="breadcrumb">Workbench / Overview</div>
-                        <div class="page-title">Developer workspace</div>
-                        <div class="page-subtitle">SAP development tools and system status</div>
+                <section class="dashboard-hero" aria-labelledby="dashboardHeroTitle">
+                    <div class="hero-copy">
+                        <div class="hero-eyebrow"><i class="hero-eyebrow-dot"></i> SAP DEVELOPER WORKBENCH <span> / </span> COMMAND CENTER</div>
+                        <h2 id="dashboardHeroTitle">Build, explore, and work directly in SAP.</h2>
+                        <p>Launch ABAP development tools, browse your SAP dictionary, explore OData services, or open a live transaction from one workspace.</p>
+                        <div class="hero-actions">
+                            <button class="btn btn-light" onclick="app.open('transactions')">Browse T-code directory <span aria-hidden="true">&#8594;</span></button>
+                            <button class="btn btn-hero-ghost" onclick="document.getElementById('globalSearch')?.focus()">Jump to command <kbd>Ctrl+/</kbd></button>
+                        </div>
                     </div>
-                    <span class="workspace-version">PEAK LEVEL</span>
-                </div>
+                    <div class="hero-art" aria-hidden="true">
+                        <span class="hero-orbit orbit-one"></span><span class="hero-orbit orbit-two"></span>
+                        <span class="hero-node node-one">ABAP</span><span class="hero-node node-two">ODATA</span><span class="hero-node node-three">SAP GUI</span>
+                        <span class="hero-core"><span>DEV</span><small>WORKSPACE</small></span>
+                    </div>
+                </section>
 
                 <section class="panel transaction-launcher" aria-label="SAP workspaces">
                     <div class="panel-header">
                         <div>
-                            <div class="panel-title">Open a workspace</div>
-                            <div class="panel-subtitle">Development transactions and integration tools</div>
+                            <div class="panel-title">Launch a workspace</div>
+                            <div class="panel-subtitle">Your SAP tools, ready when you are</div>
                         </div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
                             <button class="btn btn-secondary" onclick="app.open('transactions')">Functional T-codes</button>
@@ -4946,8 +5019,8 @@
                     <section class="panel dashboard-panel">
                         <div class="panel-header">
                             <div>
-                                <div class="panel-title">Recent work</div>
-                                <div class="panel-subtitle">Workspaces opened on this device</div>
+                                <div class="panel-title">Pick up where you left off</div>
+                                <div class="panel-subtitle">Recently opened workspaces on this device</div>
                             </div>
                             <button class="text-button" onclick="app.clearRecentWork()">Clear</button>
                         </div>
