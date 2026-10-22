@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b2b48">
+  <title>Sign in | Peak Level SAP Developer Workbench</title>
+  <style>
+    :root { color-scheme: light; --ink:#173047; --muted:#667d90; --blue:#0875d1; --line:#dce5ec; }
+    * { box-sizing:border-box; }
+    body { min-height:100vh; margin:0; display:grid; place-items:center; padding:28px; background:radial-gradient(ellipse at 10% 0%,#dcebf5 0,transparent 38%),#eef3f7; color:var(--ink); font:15px/1.5 "72","Segoe UI",Arial,sans-serif; }
+    .layout { width:min(960px,100%); min-height:560px; display:grid; grid-template-columns:1fr 1fr; overflow:hidden; border:1px solid #d4e0e9; border-radius:18px; background:white; box-shadow:0 24px 70px rgba(19,51,77,.14); }
+    .brand-panel { position:relative; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden; padding:42px; color:white; background:radial-gradient(ellipse at 88% 10%,rgba(65,177,189,.28),transparent 30%),linear-gradient(145deg,#0a2944,#105c82); }
+    .brand-panel::before { position:absolute; inset:0; content:""; opacity:.15; background-image:linear-gradient(rgba(255,255,255,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.14) 1px,transparent 1px); background-size:34px 34px; mask-image:linear-gradient(135deg,#000,transparent 78%); pointer-events:none; }
+    .brand-lockup,.brand-copy,.product-line { position:relative; z-index:1; }
+    .brand-lockup { display:flex; align-items:center; gap:13px; }
+    .sap-mark { display:grid; width:54px; height:42px; place-items:center; border-radius:5px; background:#0875d1; color:#fff; font-size:21px; font-weight:850; letter-spacing:-1.5px; }
+    .brand-name { font-size:13px; font-weight:750; }
+    .brand-sub { margin-top:2px; color:#c0d7e8; font-size:10px; }
+    .eyebrow { color:#8dd9df; font-size:10px; font-weight:800; letter-spacing:1.1px; }
+    .brand-copy h1 { max-width:365px; margin:12px 0 12px; font-size:36px; line-height:1.12; letter-spacing:-1px; }
+    .brand-copy p { max-width:370px; margin:0; color:#d2e1eb; font-size:13px; line-height:1.7; }
+    .product-line { color:#bfd5e5; font-size:10px; }
+    .login-panel { display:flex; flex-direction:column; justify-content:center; padding:48px clamp(28px,5vw,62px); }
+    .login-panel .eyebrow { color:#0b70bd; }
+    h2 { margin:10px 0 7px; color:#173047; font-size:25px; letter-spacing:-.45px; }
+    .intro { margin:0 0 26px; color:var(--muted); font-size:12px; line-height:1.65; }
+    .error { margin:0 0 16px; padding:10px 12px; border:1px solid #f0c1bd; border-radius:7px; background:#fff6f5; color:#9f2a21; font-size:11px; }
+    .error[hidden] { display:none; }
+    label { display:block; margin:0 0 6px; color:#304b60; font-size:11px; font-weight:700; }
+    input { width:100%; height:43px; margin:0 0 16px; padding:0 12px; border:1px solid #bdcbd6; border-radius:6px; background:#fff; color:#20384d; font:13px "Segoe UI",Arial,sans-serif; }
+    input:focus { outline:3px solid rgba(8,117,209,.15); border-color:#0875d1; }
+    button { width:100%; height:43px; margin-top:4px; border:1px solid #086bbd; border-radius:6px; background:linear-gradient(105deg,#0875d1,#075da8); color:#fff; font:700 12px "Segoe UI",Arial,sans-serif; cursor:pointer; box-shadow:0 5px 12px rgba(8,117,209,.16); }
+    button:hover { background:linear-gradient(105deg,#0769bd,#064f91); }
+    .privacy { margin:18px 0 0; color:#738699; font-size:10px; line-height:1.55; }
+    @media(max-width:700px) { body { padding:12px; } .layout { grid-template-columns:1fr; min-height:0; } .brand-panel { min-height:235px; padding:24px; } .brand-copy h1 { margin:10px 0 7px; font-size:26px; } .brand-copy p { font-size:11px; } .product-line { margin-top:22px; } .login-panel { padding:28px 24px 32px; } }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; transition-duration:.01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="layout">
+    <section class="brand-panel" aria-label="Peak Level SAP Developer Workbench">
+      <div class="brand-lockup"><div class="sap-mark">SAP</div><div><div class="brand-name">Peak Level</div><div class="brand-sub">SAP Developer Workbench</div></div></div>
+      <div class="brand-copy"><div class="eyebrow">DEVELOPMENT WORKSPACE</div><h1>Your SAP work, all in one place.</h1><p>Build ABAP, explore Dictionary objects, work with integrations, and open live SAP transactions through a single secure workspace.</p></div>
+      <div class="product-line">ABAP <span aria-hidden="true">·</span> OData <span aria-hidden="true">·</span> SAP GUI for HTML</div>
+    </section>
+    <section class="login-panel" aria-labelledby="loginTitle">
+      <div class="eyebrow">SECURE WORKSPACE</div>
+      <h2 id="loginTitle">Sign in to continue</h2>
+      <p class="intro">Enter your workbench username and password. These are the dashboard credentials configured for this deployment.</p>
+      <div id="loginError" class="error" role="alert" hidden>That username and password did not match. Please try again.</div>
+      <form method="post" action="/auth/login">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <input id="next" name="next" type="hidden" value="/">
+        <button type="submit">Sign in securely</button>
+      </form>
+      <p class="privacy">Your SAP password is stored server-side and is separate from these workbench sign-in credentials.</p>
+    </section>
+  </main>
+  <script>
+    const loginParams = new URLSearchParams(window.location.search);
+    const requestedPage = loginParams.get('next') || '/';
+    document.getElementById('next').value = requestedPage.startsWith('/') && !requestedPage.startsWith('//') ? requestedPage : '/';
+    if (loginParams.get('error') === '1') document.getElementById('loginError').hidden = false;
+  </script>
+</body>
+</html>

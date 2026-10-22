@@ -143,40 +143,98 @@ function safeCredentialEquals(actual, expected) {
     return crypto.timingSafeEqual(actualDigest, expectedDigest);
 }
 
+const dashboardSessions = new Map();
+const dashboardEntryGrants = new Map();
+const dashboardSessionCookie = "sap_workbench_session";
+const dashboardEntryCookie = "sap_workbench_entry";
+const dashboardSessionLifetimeMs = 12 * 60 * 60 * 1000;
+const dashboardEntryLifetimeMs = 2 * 60 * 1000;
+
+function hashSessionToken(token) {
+    return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function readCookie(req, name) {
+    const prefix = `${name}=`;
+    const entry = String(req.headers.cookie || "")
+        .split(";")
+        .map(value => value.trim())
+        .find(value => value.startsWith(prefix));
+    return entry ? entry.slice(prefix.length) : "";
+}
+
+function isSecureRequest(req) {
+    return process.env.NODE_ENV === "production" || req.secure === true;
+}
+
+function appendSessionCookie(res, req, name, value, clear = false) {
+    const attributes = ["Path=/", "HttpOnly", "SameSite=Strict"];
+    if (isSecureRequest(req)) attributes.push("Secure");
+    if (clear) attributes.push("Max-Age=0");
+    res.append("Set-Cookie", `${name}=${value}; ${attributes.join("; ")}`);
+}
+
+function isTopLevelDocument(req) {
+    if (req.method !== "GET") return false;
+    const fetchDestination = String(req.get("sec-fetch-dest") || "").toLowerCase();
+    if (fetchDestination) return fetchDestination === "document";
+    return String(req.get("accept") || "").toLowerCase().includes("text/html");
+}
+
+function sameOriginRequest(req) {
+    try {
+        return new URL(req.get("origin") || "").host ===
+            String(req.get("host") || "").toLowerCase();
+    } catch (_) {
+        return req.get("sec-fetch-site") === "same-origin";
+    }
+}
+
+function safeLoginDestination(value) {
+    const candidate = String(value || "/");
+    if (!candidate.startsWith("/") || candidate.startsWith("//") || /[\\\r\n]/.test(candidate)) {
+        return "/";
+    }
+    if (/^\/login(?:[/?#]|$)/i.test(candidate)) return "/";
+    return candidate;
+}
+
 function authenticateDashboard(req, res, next) {
     if (!dashboardUsername || req.path === "/api/health") {
         return next();
     }
 
-    const authorization = String(req.headers.authorization || "");
-    const match = authorization.match(/^Basic\s+([A-Za-z0-9+/=]+)$/i);
-    if (!match) {
-        res.setHeader("WWW-Authenticate", 'Basic realm="SAP Workbench", charset="UTF-8"');
-        return res.status(401).send("Authentication required.");
+    const sessionToken = readCookie(req, dashboardSessionCookie);
+    const sessionDigest = sessionToken ? hashSessionToken(sessionToken) : "";
+    const session = sessionDigest ? dashboardSessions.get(sessionDigest) : null;
+    if (session && session.expiresAt > Date.now()) {
+        req.dashboardSessionDigest = sessionDigest;
+
+        if (isTopLevelDocument(req)) {
+            const entryToken = readCookie(req, dashboardEntryCookie);
+            const entryDigest = entryToken ? hashSessionToken(entryToken) : "";
+            const entry = entryDigest ? dashboardEntryGrants.get(entryDigest) : null;
+            if (entryDigest) dashboardEntryGrants.delete(entryDigest);
+            appendSessionCookie(res, req, dashboardEntryCookie, "", true);
+
+            if (!entry || entry.expiresAt <= Date.now() || entry.sessionDigest !== sessionDigest) {
+                res.setHeader("Cache-Control", "no-store");
+                return res.redirect(303, `/login?next=${encodeURIComponent(req.originalUrl || "/")}`);
+            }
+            res.setHeader("Cache-Control", "no-store");
+        }
+
+        return next();
     }
 
-    let credentials;
-    try {
-        credentials = Buffer.from(match[1], "base64").toString("utf8");
-    } catch (_) {
-        credentials = "";
+    if (sessionDigest) dashboardSessions.delete(sessionDigest);
+    if (isTopLevelDocument(req)) {
+        res.setHeader("Cache-Control", "no-store");
+        return res.redirect(303, `/login?next=${encodeURIComponent(req.originalUrl || "/")}`);
     }
 
-    const separator = credentials.indexOf(":");
-    const username = separator < 0 ? "" : credentials.slice(0, separator);
-    const password = separator < 0 ? "" : credentials.slice(separator + 1);
-    // Compare both fields on every attempt so a bad username does not skip
-    // the password comparison and reveal which half of the credential matched.
-    const usernameMatches = safeCredentialEquals(username, dashboardUsername);
-    const passwordMatches = safeCredentialEquals(password, dashboardPassword);
-    const valid = usernameMatches && passwordMatches;
-
-    if (!valid) {
-        res.setHeader("WWW-Authenticate", 'Basic realm="SAP Workbench", charset="UTF-8"');
-        return res.status(401).send("Authentication required.");
-    }
-
-    return next();
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(401).json({ success: false, message: "Sign in to continue to Peak Level." });
 }
 
 function requireSapConfig() {
@@ -646,6 +704,52 @@ app.use((req, res, next) => {
     next();
 });
 
+app.get("/login", (req, res) => {
+    if (!dashboardUsername) return res.redirect(303, "/");
+    res.setHeader("Cache-Control", "no-store");
+    res.sendFile(path.join(frontendPath, "login.html"));
+});
+
+app.post("/auth/login", express.urlencoded({ extended: false, limit: "8kb" }), (req, res) => {
+    if (!dashboardUsername) return res.redirect(303, "/");
+    if (!sameOriginRequest(req)) {
+        return res.status(403).type("text/plain").send("Sign-in requests must come from this workbench.");
+    }
+
+    const username = String(req.body?.username || "");
+    const password = String(req.body?.password || "");
+    // Compare both fields on every attempt so an incorrect username does not
+    // skip the password comparison.
+    const usernameMatches = safeCredentialEquals(username, dashboardUsername);
+    const passwordMatches = safeCredentialEquals(password, dashboardPassword);
+    const destination = safeLoginDestination(req.body?.next);
+    if (!usernameMatches || !passwordMatches) {
+        return res.redirect(303, `/login?error=1&next=${encodeURIComponent(destination)}`);
+    }
+
+    const now = Date.now();
+    for (const [digest, session] of dashboardSessions) {
+        if (session.expiresAt <= now) dashboardSessions.delete(digest);
+    }
+    for (const [digest, grant] of dashboardEntryGrants) {
+        if (grant.expiresAt <= now) dashboardEntryGrants.delete(digest);
+    }
+
+    const sessionToken = crypto.randomBytes(32).toString("base64url");
+    const entryToken = crypto.randomBytes(32).toString("base64url");
+    const sessionDigest = hashSessionToken(sessionToken);
+    dashboardSessions.set(sessionDigest, { expiresAt: now + dashboardSessionLifetimeMs });
+    dashboardEntryGrants.set(hashSessionToken(entryToken), {
+        sessionDigest,
+        expiresAt: now + dashboardEntryLifetimeMs
+    });
+
+    res.setHeader("Cache-Control", "no-store");
+    appendSessionCookie(res, req, dashboardSessionCookie, sessionToken);
+    appendSessionCookie(res, req, dashboardEntryCookie, entryToken);
+    return res.redirect(303, destination);
+});
+
 app.use(authenticateDashboard);
 
 app.use((req, res, next) => {
@@ -697,6 +801,16 @@ app.use(
         limit: "10mb"
     })
 );
+
+app.post("/auth/logout", (req, res) => {
+    if (req.dashboardSessionDigest) {
+        dashboardSessions.delete(req.dashboardSessionDigest);
+    }
+    appendSessionCookie(res, req, dashboardSessionCookie, "", true);
+    appendSessionCookie(res, req, dashboardEntryCookie, "", true);
+    res.setHeader("Cache-Control", "no-store");
+    return res.json({ success: true });
+});
 
 // ======================================================
 // HEALTH

@@ -2335,16 +2335,6 @@
             position: relative;
         }
 
-        .command-hint {
-            position: absolute;
-            right: 11px;
-            top: 13px;
-            font-size: 8px;
-            color: #718397;
-            pointer-events: none;
-            letter-spacing: .4px;
-        }
-
         .command-palette {
             position: absolute;
             top: 48px;
@@ -3322,7 +3312,7 @@
         @media (max-width:850px) {
             .topbar { padding:0 16px; }
             .brand { min-width:0; }
-            .brand-subtitle,.command-hint { display:none; }
+            .brand-subtitle { display:none; }
             .search-box { width:min(34vw,300px); }
             .sidebar { width:232px; }
             .content { padding:24px 20px 40px; }
@@ -3709,7 +3699,7 @@
         @media (max-width: 850px) {
             .topbar { padding: 0 14px; gap: 12px; }
             .brand { min-width: 0; flex: 0 1 220px; }
-            .brand-subtitle, .command-hint { display: none; }
+            .brand-subtitle { display: none; }
             .search-box { width: min(34vw, 320px); flex-basis: min(34vw, 320px); }
             .sidebar { width: 200px; flex-basis: 200px; }
             .content { padding: 20px 16px 30px; }
@@ -3722,7 +3712,7 @@
             .brand-divider { height: 24px; }
             .sap-logo { padding: 6px 8px; font-size: 13px; }
             .search-box { width: 34px; min-width: 34px; height: 34px; flex: 0 0 34px; padding: 0 7px; }
-            .search-box input, .search-box .command-hint { display: none; }
+            .search-box input { display: none; }
             .search-box:focus-within {
                 position: absolute;
                 z-index: 120;
@@ -3820,6 +3810,8 @@
         .status-pill { border-radius: 999px; }
         .system-checks { border-radius: 7px; }
         .refresh-status { font-size: 17px; }
+        .signout-btn { min-height:34px; padding:0 11px; border:1px solid #cbd8e2; border-radius:5px; background:#fff; color:#536c80; font:650 10px "72","Segoe UI",sans-serif; cursor:pointer; }
+        .signout-btn:hover { border-color:#8eabc1; background:#f5f9fc; color:#234861; }
         @media (max-width: 1100px) {
             .transaction-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
             .transaction-shortcut:nth-child(4n) { border-right: 1px solid #e2e8ed; }
@@ -3837,6 +3829,7 @@
             .hero-art { display: none !important; }
             .hero-actions { align-items: stretch; }
             .hero-actions .btn { justify-content: center; }
+            .signout-btn { min-height:31px; padding:0 7px; font-size:9px; }
             .transaction-launcher .panel-header { min-height: 0; padding: 13px; }
             .transaction-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .transaction-shortcut { min-height: 66px; padding: 9px; }
@@ -3890,14 +3883,10 @@
         <input
             id="globalSearch"
             aria-label="Search workbench tools and SAP transactions"
-            placeholder="Command / T-code / object...   (Enter • Ctrl+/)"
+            placeholder="Search tools, transactions, or objects"
             autocomplete="off"
             spellcheck="false"
         >
-
-        <span class="command-hint">
-            F1 • Ctrl+/
-        </span>
 
         <div
             id="commandPalette"
@@ -3961,6 +3950,8 @@
             </span>
 
         </div>
+
+        <button class="signout-btn" type="button" onclick="app.signOut()" title="End this workbench session">Sign out</button>
 
     </div>
 
@@ -4675,6 +4666,13 @@
 
             }
 
+        },
+
+        async signOut() {
+            try {
+                await fetch("/auth/logout", { method: "POST", headers: { Accept: "application/json" } });
+            } catch (_) {}
+            window.location.replace("/login");
         },
 
 
