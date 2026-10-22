@@ -21,7 +21,7 @@ const dashboardUsername = process.env.DASHBOARD_USERNAME || "";
 const dashboardPassword = process.env.DASHBOARD_PASSWORD || "";
 const verifySapTls =
     String(process.env.SAP_TLS_REJECT_UNAUTHORIZED || "true").toLowerCase() !== "false";
-const sapCaFile = process.env.SAP_CA_CERT;
+const sapCaConfig = process.env.SAP_CA_CERT;
 const sapTlsServername = process.env.SAP_TLS_SERVERNAME || undefined;
 let systemCa = [];
 if (typeof tls.getCACertificates === "function") {
@@ -32,11 +32,16 @@ if (typeof tls.getCACertificates === "function") {
     }
 }
 let sapCa = [...tls.rootCertificates, ...systemCa];
-if (sapCaFile) {
-    try {
-        sapCa.push(fs.readFileSync(path.resolve(__dirname, "..", sapCaFile), "utf8"));
-    } catch (error) {
-        throw new Error(`Unable to read SAP_CA_CERT (${sapCaFile}): ${error.message}`);
+if (sapCaConfig) {
+    const configuredCa = String(sapCaConfig).trim();
+    if (configuredCa.includes("-----BEGIN CERTIFICATE-----")) {
+        sapCa.push(configuredCa.replace(/\\n/g, "\n"));
+    } else {
+        try {
+            sapCa.push(fs.readFileSync(path.resolve(__dirname, "..", configuredCa), "utf8"));
+        } catch (error) {
+            throw new Error(`Unable to read SAP_CA_CERT as PEM content or a file path: ${error.message}`);
+        }
     }
 }
 const sapHttpsAgent = new https.Agent({
