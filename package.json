@@ -7,7 +7,7 @@
     "start": "node --use-system-ca backend/server.js",
     "demo": "node --use-system-ca backend/start-demo.js",
     "dev": "nodemon --exec \"node --use-system-ca\" backend/server.js",
-    "check": "node --check backend/server.js && node scripts/check-frontend.js"
+    "check": "node --check backend/server.js && node --check backend/sales-orders.js && node --check backend/sap-transport.js && node --check backend/start-demo.js && node scripts/check-frontend.js"
   },
   "engines": {
     "node": ">=22.19.0"

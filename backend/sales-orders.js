@@ -9,68 +9,10 @@ require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 const express = require('express');
 const axios = require('axios');
-const fs = require('node:fs');
-const https = require('node:https');
-const tls = require('node:tls');
+const { sapHttpsAgent, sapAxiosProxy, sapConnectionError } = require('./sap-transport');
 
 const router = express.Router();
 router.use(express.json({ limit: '256kb' }));
-
-const verifySapTls = String(process.env.SAP_TLS_REJECT_UNAUTHORIZED || 'true').toLowerCase() !== 'false';
-if (process.env.NODE_ENV === 'production' && !verifySapTls) {
-  throw new Error('Production requires SAP TLS verification. Configure the SAP CA certificate instead of disabling verification.');
-}
-
-let systemCa = [];
-if (typeof tls.getCACertificates === 'function') {
-  try {
-    systemCa = tls.getCACertificates('system');
-  } catch (_) {
-    // Some Node versions do not expose the operating system CA store.
-  }
-}
-const sapCa = [...tls.rootCertificates, ...systemCa];
-const bundledSapCaPath = path.resolve(__dirname, '..', 'certs', 'sap-server.pem');
-if (fs.existsSync(bundledSapCaPath)) {
-  sapCa.push(fs.readFileSync(bundledSapCaPath, 'utf8'));
-}
-if (process.env.SAP_CA_CERT) {
-  const certificatePath = path.resolve(__dirname, '..', process.env.SAP_CA_CERT);
-  try {
-    sapCa.push(fs.readFileSync(certificatePath, 'utf8'));
-  } catch (error) {
-    throw new Error(`Unable to read SAP_CA_CERT (${process.env.SAP_CA_CERT}): ${error.message}`);
-  }
-}
-
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: verifySapTls,
-  ca: sapCa,
-  ...(process.env.SAP_TLS_SERVERNAME ? { servername: process.env.SAP_TLS_SERVERNAME } : {}),
-});
-
-function getSapProxy() {
-  const value = process.env.SAP_HTTP_PROXY;
-  if (!value) return false;
-  const proxy = new URL(value);
-  if (!['http:', 'https:'].includes(proxy.protocol)) {
-    throw new Error('SAP_HTTP_PROXY must use HTTP or HTTPS.');
-  }
-  const auth = proxy.username || proxy.password
-    ? {
-      username: decodeURIComponent(proxy.username),
-      password: decodeURIComponent(proxy.password),
-    }
-    : undefined;
-  return {
-    protocol: proxy.protocol,
-    host: proxy.hostname,
-    port: Number(proxy.port || (proxy.protocol === 'https:' ? 443 : 80)),
-    ...(auth ? { auth } : {}),
-  };
-}
-
-const sapAxiosProxy = getSapProxy();
 const ORDER_SELECT = [
   'SalesOrder',
   'SalesOrderType',
@@ -135,7 +77,7 @@ router.get('/config', (_req, res) => {
 function makeSapClient(config) {
   return axios.create({
     auth: config.auth,
-    httpsAgent,
+    httpsAgent: sapHttpsAgent,
     // Ignore machine-wide proxy variables, which may point to stale local proxies.
     // Configure SAP_HTTP_PROXY explicitly when SAP API traffic requires a proxy.
     proxy: sapAxiosProxy,
@@ -160,11 +102,21 @@ function sapErrorText(error) {
   ];
   const found = candidates.find((item) => typeof item === 'string' && item.trim());
   if (found) return found;
-  if (error?.code === 'ECONNREFUSED') return 'Connection refused by SAP. Check the host, port, VPN, and SAP availability.';
-  if (error?.code === 'ETIMEDOUT' || error?.code === 'ECONNABORTED') return 'SAP request timed out. Check network connectivity and SAP response time.';
   if (error?.code === 'SAP_CONFIG_MISSING') return error.message;
-  if (error?.code === 'CERT_HAS_EXPIRED' || error?.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
-    return 'TLS certificate validation failed. Configure the SAP certificate/CA; do not disable validation outside DEV.';
+  if ([
+    'ERR_TLS_CERT_ALTNAME_INVALID',
+    'CERT_HAS_EXPIRED',
+    'SELF_SIGNED_CERT_IN_CHAIN',
+    'DEPTH_ZERO_SELF_SIGNED_CERT',
+    'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+    'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+    'ECONNREFUSED',
+    'ETIMEDOUT',
+    'ECONNABORTED',
+    'ENOTFOUND',
+    'EAI_AGAIN',
+  ].includes(error?.code)) {
+    return sapConnectionError(error).message;
   }
   return error?.message || 'Unknown SAP API error.';
 }

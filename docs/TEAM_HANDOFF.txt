@@ -48,6 +48,12 @@ Dashboard and SAP integration backend
     workbench API routes, calls SAP APIs, and proxies SAP GUI for HTML.
   - SAP API calls use HTTPS with certificate verification enabled. The app
     trusts Node/system certificates plus configured SAP CA material.
+  - ADT, OData, WebGUI, and sales-order requests share one SAP TLS
+    configuration. API calls use a bounded keep-alive connection pool. The
+    WebGUI proxy keeps SAP's session cookies but removes the Peak Level sign-in
+    cookie before forwarding browser traffic to SAP.
+  - SAP certificate, DNS, refused-connection, and timeout failures use the
+    same actionable diagnostic language across the workbench APIs.
   - SAP API calls use an explicitly configured SAP_HTTP_PROXY if needed.
     SAP GUI for HTML uses the direct server-to-SAP connection in this code.
 
@@ -232,6 +238,7 @@ USEFUL PROJECT FILES
   docs/TEAM_HANDOFF.txt       This technical handoff
   frontend/                    Browser pages, styles, and JavaScript
   backend/server.js            Express app, SAP APIs, authentication, WebGUI
+  backend/sap-transport.js     Shared SAP TLS, trusted CA, proxy, and agent pool
   backend/sales-orders.js      Sales order API routes
   app.py                       Private FastAPI ABAP Copilot
   render.yaml                  Render Blueprint and runtime environment names

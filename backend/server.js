@@ -2,10 +2,14 @@ const express = require("express");
 const path = require("path");
 const axios = require("axios");
 const https = require("https");
-const fs = require("fs");
-const tls = require("tls");
 const crypto = require("crypto");
 require("dotenv").config();
+const {
+    verifySapTls,
+    sapHttpsAgent,
+    sapAxiosProxy,
+    sapConnectionError
+} = require("./sap-transport");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,90 +23,6 @@ const CHATBOT_API_URL =
         : "http://127.0.0.1:8000/api/chat");
 const dashboardUsername = process.env.DASHBOARD_USERNAME || "";
 const dashboardPassword = process.env.DASHBOARD_PASSWORD || "";
-const verifySapTls =
-    String(process.env.SAP_TLS_REJECT_UNAUTHORIZED || "true").toLowerCase() !== "false";
-const sapCaConfig = process.env.SAP_CA_CERT;
-const sapTlsServername = process.env.SAP_TLS_SERVERNAME || undefined;
-let systemCa = [];
-if (typeof tls.getCACertificates === "function") {
-    try {
-        systemCa = tls.getCACertificates("system");
-    } catch (_) {
-        // Older Node versions and some platforms may not expose the OS trust store.
-    }
-}
-let sapCa = [...tls.rootCertificates, ...systemCa];
-const bundledSapCaPath = path.resolve(__dirname, "..", "certs", "sap-server.pem");
-if (fs.existsSync(bundledSapCaPath)) {
-    sapCa.push(fs.readFileSync(bundledSapCaPath, "utf8"));
-}
-if (sapCaConfig) {
-    const configuredCa = String(sapCaConfig).trim();
-    if (configuredCa.includes("-----BEGIN CERTIFICATE-----")) {
-        sapCa.push(configuredCa.replace(/\\n/g, "\n"));
-    } else {
-        try {
-            sapCa.push(fs.readFileSync(path.resolve(__dirname, "..", configuredCa), "utf8"));
-        } catch (error) {
-            throw new Error(`Unable to read SAP_CA_CERT as PEM content or a file path: ${error.message}`);
-        }
-    }
-}
-const sapHttpsAgent = new https.Agent({
-    rejectUnauthorized: verifySapTls,
-    ca: sapCa,
-    ...(sapTlsServername ? { servername: sapTlsServername } : {})
-});
-
-function sapProxyConfig() {
-    const value = process.env.SAP_HTTP_PROXY;
-    if (!value) return false;
-    const proxy = new URL(value);
-    if (!["http:", "https:"].includes(proxy.protocol)) {
-        throw new Error("SAP_HTTP_PROXY must use HTTP or HTTPS.");
-    }
-    const auth = proxy.username || proxy.password
-        ? {
-            username: decodeURIComponent(proxy.username),
-            password: decodeURIComponent(proxy.password)
-        }
-        : undefined;
-    return {
-        protocol: proxy.protocol,
-        host: proxy.hostname,
-        port: Number(proxy.port || (proxy.protocol === "https:" ? 443 : 80)),
-        ...(auth ? { auth } : {})
-    };
-}
-
-const sapAxiosProxy = sapProxyConfig();
-
-function sapConnectionError(error) {
-    if (error?.code === "ERR_TLS_CERT_ALTNAME_INVALID") {
-        return new Error(`The SAP certificate name does not match SAP_BASE_URL. Configure the DNS name covered by the certificate, or ask SAP Basis to issue a certificate whose Subject Alternative Name covers the configured endpoint.`);
-    }
-    if (["SELF_SIGNED_CERT_IN_CHAIN", "DEPTH_ZERO_SELF_SIGNED_CERT", "UNABLE_TO_VERIFY_LEAF_SIGNATURE", "UNABLE_TO_GET_ISSUER_CERT_LOCALLY"].includes(error?.code)) {
-        return new Error("SAP's certificate chain is not trusted by Node.js or the operating system certificate store. Ask SAP Basis for the approved root/intermediate CA certificate in PEM format, confirm its Subject Alternative Name covers SAP_BASE_URL, then configure SAP_CA_CERT and keep SAP_TLS_REJECT_UNAUTHORIZED=true. The SAP agent already checks the OS trust store.");
-    }
-    const endpoint = (() => {
-        try {
-            const url = new URL(sapBaseUrl());
-            return `${url.hostname}:${url.port || 443}`;
-        } catch (_) {
-            return "the configured SAP endpoint";
-        }
-    })();
-    if (error?.code === "ECONNREFUSED") {
-        return new Error(`The SAP endpoint ${endpoint} refused the connection. Verify SAP_BASE_URL, SAP service port, and network/VPN access. SAP API calls bypass machine proxy settings; use SAP_HTTP_PROXY for API traffic when required. The WebGUI stream connects directly.`);
-    }
-    if (["ETIMEDOUT", "ECONNABORTED"].includes(error?.code)) {
-        return new Error(`Connection to SAP at ${endpoint} timed out. Check network/VPN access and the SAP service port.`);
-    }
-    if (["ENOTFOUND", "EAI_AGAIN"].includes(error?.code)) {
-        return new Error(`Could not resolve the SAP host in ${endpoint}. Check SAP_BASE_URL and DNS/VPN access.`);
-    }
-    return error;
-}
 
 function isLoopbackHost(host) {
     return ["localhost", "127.0.0.1", "::1"].includes(
@@ -145,6 +65,10 @@ function safeCredentialEquals(actual, expected) {
 
 const dashboardSessions = new Map();
 const dashboardSessionCookie = "sap_workbench_session";
+const dashboardCookiesToStripFromSap = new Set([
+    dashboardSessionCookie,
+    "sap_workbench_entry"
+]);
 const dashboardSessionLifetimeMs = 12 * 60 * 60 * 1000;
 
 function hashSessionToken(token) {
@@ -3364,6 +3288,23 @@ function proxySapRequest(req, res) {
             ...req.headers
         };
 
+        if (headers.cookie) {
+            const forwardedCookies = String(headers.cookie)
+                .split(";")
+                .map(cookie => cookie.trim())
+                .filter(cookie => {
+                    const separator = cookie.indexOf("=");
+                    const name = separator >= 0 ? cookie.slice(0, separator).trim() : cookie;
+                    return name && !dashboardCookiesToStripFromSap.has(name);
+                });
+            if (forwardedCookies.length) headers.cookie = forwardedCookies.join("; ");
+            else delete headers.cookie;
+        }
+
+        // The WebGUI proxy connects directly; never forward browser proxy auth
+        // or let a client-provided Authorization header reach the SAP system.
+        delete headers["proxy-authorization"];
+
         headers.host =
             target.host;
 
@@ -3598,6 +3539,7 @@ const server = app.listen(
 for (const signal of ["SIGINT", "SIGTERM"]) {
     process.on(signal, () => {
         server.close(error => {
+            sapHttpsAgent.destroy();
             if (error) {
                 console.error("Server shutdown failed:", error);
                 process.exitCode = 1;
