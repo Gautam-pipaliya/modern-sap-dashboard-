@@ -331,3 +331,146 @@ tr:hover td { background: #f0f7fc; }
 @media (prefers-reduced-motion: reduce) {
     *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Small-screen navigation and touch layout */
+.mobile-nav-toggle,
+.mobile-nav-backdrop { display: none; }
+
+@media (max-width: 600px) {
+    body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
+    .topbar { height: 60px; flex-basis: 60px; min-width: 0; gap: 8px; padding: 0 10px; }
+    .mobile-nav-toggle {
+        display: flex;
+        flex: 0 0 40px;
+        width: 40px;
+        height: 40px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 0;
+        border: 1px solid #d7e1e9;
+        border-radius: 6px;
+        background: #fff;
+        color: #29465d;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-nav-toggle span {
+        width: 17px;
+        height: 2px;
+        border-radius: 2px;
+        background: currentColor;
+        transition: transform .18s ease, opacity .18s ease;
+    }
+    body.mobile-nav-open .mobile-nav-toggle span:first-child { transform: translateY(6px) rotate(45deg); }
+    body.mobile-nav-open .mobile-nav-toggle span:nth-child(2) { opacity: 0; }
+    body.mobile-nav-open .mobile-nav-toggle span:last-child { transform: translateY(-6px) rotate(-45deg); }
+    .brand { min-width: 0; flex: 1 1 auto; gap: 7px; }
+    .brand-title { max-width: 105px; font-size: 10px; line-height: 1.2; }
+    .brand-divider { height: 24px; }
+    .sap-logo { flex: 0 0 auto; padding: 6px 7px; font-size: 13px; }
+    .search-box { flex: 0 0 34px; width: 34px; min-width: 34px; height: 36px; padding: 0 8px; }
+    .top-actions { flex: 0 0 auto; gap: 4px; }
+    .ai-copilot-button { max-width: 42px; overflow: hidden; white-space: nowrap; }
+    .app-body { flex: 1 1 auto; height: auto; min-height: 0; }
+    .sidebar {
+        position: fixed;
+        z-index: 130;
+        top: 60px;
+        bottom: 0;
+        left: 0;
+        width: min(86vw, 304px);
+        height: auto;
+        flex: none;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+        border-right: 1px solid #d7e1e9;
+        box-shadow: 12px 0 32px rgba(20, 43, 63, .18);
+        transform: translateX(-105%);
+        transition: transform .2s ease;
+        visibility: hidden;
+    }
+    body.mobile-nav-open .sidebar { transform: translateX(0); visibility: visible; }
+    .mobile-nav-backdrop:not([hidden]) {
+        position: fixed;
+        z-index: 120;
+        inset: 60px 0 0;
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 0;
+        background: rgba(13, 30, 46, .42);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .sidebar-header { padding: 16px 14px 12px; }
+    .new-object { width: 100%; min-width: 0; min-height: 44px; overflow: visible; padding: 0 12px; color: #fff; font-size: 12px; }
+    .new-object::first-letter { color: inherit; font-size: inherit; }
+    .nav-group { padding: 4px 10px; }
+    .nav-title { display: block; padding: 11px 10px 6px; }
+    .nav-item,
+    .nav-item:hover,
+    .nav-item.active {
+        position: relative;
+        width: 100%;
+        height: auto;
+        min-height: 44px;
+        justify-content: flex-start;
+        margin: 2px 0;
+        padding: 0 11px;
+        gap: 11px;
+        transform: none;
+        text-align: left;
+    }
+    .nav-item span:not(.nav-icon),
+    .sidebar-bottom .nav-item span:not(.nav-icon) {
+        position: static;
+        display: inline;
+        width: auto;
+        height: auto;
+        margin: 0;
+        overflow: visible;
+        clip: auto;
+        clip-path: none;
+        white-space: normal;
+    }
+    .nav-icon { width: 20px; flex: 0 0 20px; text-align: center; }
+    .sidebar-bottom { padding: 8px 10px 14px; }
+    .content { min-width: 0; padding: 16px 13px max(24px, env(safe-area-inset-bottom)); overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+    .page-title { font-size: 22px; overflow-wrap: anywhere; }
+    .page-subtitle { line-height: 1.55; }
+    .dashboard-hero { padding: 21px 18px; }
+    .dashboard-hero h2 { font-size: clamp(23px, 7vw, 28px); }
+    .dashboard-hero p { font-size: 11px; }
+    .dashboard-capabilities { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .capability-card { min-width: 0; min-height: 150px; padding: 12px; }
+    .capability-text { min-height: 0; }
+    .transaction-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .transaction-shortcut { min-width: 0; padding: 9px; }
+    .dashboard-columns { grid-template-columns: minmax(0, 1fr); }
+    .tool-card, .panel, .result { min-width: 0; }
+    .tool-body { padding: 14px; }
+    .tool-header { padding: 14px; }
+    .form-grid { grid-template-columns: minmax(0, 1fr); }
+    .field.full { grid-column: auto; }
+    .table-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+    .table-wrap table { min-width: 560px; }
+    :where(button, .btn, input, select, textarea) { scroll-margin: 12px; }
+}
+
+@media (min-width: 601px) {
+    .sidebar { transform: none; visibility: visible; }
+}
+
+@media (max-width: 360px) {
+    .topbar { gap: 5px; padding-right: 7px; padding-left: 7px; }
+    .brand-title { max-width: 78px; font-size: 9px; }
+    .brand-divider { margin: 0 2px; }
+    .mobile-nav-toggle { flex-basis: 36px; width: 36px; height: 36px; }
+    .ai-copilot-button { max-width: 36px; padding: 0 6px !important; }
+    .content { padding-right: 10px; padding-left: 10px; }
+    .dashboard-capabilities { grid-template-columns: 1fr; }
+    .capability-card { min-height: 126px; }
+}
