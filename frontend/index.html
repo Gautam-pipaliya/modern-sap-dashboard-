@@ -4691,6 +4691,13 @@
 
                 `<div class="content-inner">${html}</div>`;
 
+            const pageHeading = this.content().querySelector(".page-title")?.textContent
+                ?.replace(/\s+/g, " ")
+                .trim();
+            document.title = pageHeading
+                ? `${pageHeading} | Peak Level SAP Developer Workbench`
+                : "Peak Level | SAP Developer Workbench";
+
             this.content().scrollTop = 0;
             this.content().scrollLeft = 0;
 
@@ -4957,9 +4964,9 @@
             this.setContent(`
                 <section class="dashboard-hero" aria-labelledby="dashboardHeroTitle">
                     <div class="hero-copy">
-                        <div class="hero-eyebrow"><i class="hero-eyebrow-dot"></i> SAP DEVELOPER WORKBENCH <span> / </span> COMMAND CENTER</div>
-                        <h2 id="dashboardHeroTitle">Build, explore, and work directly in SAP.</h2>
-                        <p>Launch ABAP development tools, browse your SAP dictionary, explore OData services, or open a live transaction from one workspace.</p>
+                        <div class="hero-eyebrow"><i class="hero-eyebrow-dot"></i> PEAK LEVEL <span> / </span> SAP DEVELOPER WORKBENCH</div>
+                        <h2 id="dashboardHeroTitle">Your SAP development, at peak level.</h2>
+                        <p>One command center for ABAP development, Dictionary objects, OData integrations, and live SAP transactions.</p>
                         <div class="hero-actions">
                             <button class="btn btn-light" onclick="app.open('transactions')">Browse T-code directory <span aria-hidden="true">&#8594;</span></button>
                             <button class="btn btn-hero-ghost" onclick="document.getElementById('globalSearch')?.focus()">Jump to command <kbd>Ctrl+/</kbd></button>

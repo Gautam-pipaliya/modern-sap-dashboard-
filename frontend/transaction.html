@@ -146,7 +146,7 @@
       const entry = catalog.find((item) => item.code === code);
       const title = entry?.desc || 'SAP transaction workspace';
       const module = entry?.module || 'Custom / system-specific';
-      document.title = `${code || 'SAP'} | ${title}`;
+      document.title = `${code || 'SAP'} | Peak Level SAP Developer Workbench`;
       document.getElementById('transactionCode').textContent = code || 'SAP';
       document.getElementById('transactionTitle').textContent = title;
       document.getElementById('transactionDescription').textContent = entry
