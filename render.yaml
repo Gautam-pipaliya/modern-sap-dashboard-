@@ -1,11 +1,12 @@
 services:
-  # Public dashboard. Render supplies HTTPS and a public onrender.com URL.
+  # One free public web service runs both the dashboard and its private chatbot
+  # in the same container. The chatbot listens on loopback only.
   - type: web
     name: sap-developer-workbench
     runtime: docker
     region: singapore
-    plan: 0.5c-512mb
-    dockerfilePath: ./Dockerfile
+    plan: free
+    dockerfilePath: ./Dockerfile.render
     dockerContext: .
     healthCheckPath: /api/health
     envVars:
@@ -15,11 +16,14 @@ services:
         value: 0.0.0.0
       - key: PORT
         value: "10000"
-      - key: CHATBOT_HOSTPORT
-        fromService:
-          type: pserv
-          name: sap-developer-chatbot
-          property: hostport
+      - key: CHATBOT_API_URL
+        value: http://127.0.0.1:8000/api/chat
+      - key: COPILOT_HOST
+        value: 127.0.0.1
+      - key: COPILOT_PORT
+        value: "8000"
+      - key: COPILOT_MEMORY_DB
+        value: /tmp/copilot_memory.sqlite3
       - key: DASHBOARD_USERNAME
         sync: false
       - key: DASHBOARD_PASSWORD
@@ -34,30 +38,10 @@ services:
         sync: false
       - key: SAP_TLS_REJECT_UNAUTHORIZED
         value: "true"
-      - key: SAP_CA_CERT
-        value: /etc/secrets/sap-server.pem
       - key: SAP_TLS_SERVERNAME
-        sync: false
-
-  # Private service: only the dashboard calls this API over Render's network.
-  - type: pserv
-    name: sap-developer-chatbot
-    runtime: docker
-    region: singapore
-    plan: 0.5c-512mb
-    dockerfilePath: ./Dockerfile.chatbot
-    dockerContext: .
-    disk:
-      name: copilot-memory
-      mountPath: /app/data
-      sizeGB: 1
-    envVars:
-      - key: COPILOT_HOST
-        value: 0.0.0.0
-      - key: COPILOT_PORT
-        value: "8000"
-      - key: COPILOT_MEMORY_DB
-        value: /app/data/copilot_memory.sqlite3
+        value: ""
+      - key: AI_PROVIDER
+        value: auto
       - key: AI_API_KEY
         sync: false
       - key: AI_MODEL
@@ -71,4 +55,4 @@ services:
       - key: AI_MAX_OUTPUT_TOKENS
         value: "12000"
       - key: AI_MAX_CONCURRENT_REQUESTS
-        value: "4"
+        value: "1"

@@ -48,3 +48,6 @@ jobs:
 
       - name: Build chatbot image
         run: docker build --file Dockerfile.chatbot --tag sap-web-dashboard-chatbot:ci .
+
+      - name: Build combined Render free-service image
+        run: docker build --file Dockerfile.render --tag sap-web-dashboard-render:ci .

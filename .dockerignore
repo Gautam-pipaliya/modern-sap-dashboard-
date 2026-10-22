@@ -1,7 +1,7 @@
 .git
 .env
 .env.*
-.venv
+.venv*/
 node_modules
 __pycache__
 *.py[cod]
@@ -12,3 +12,4 @@ __pycache__
 *.pfx
 certs
 data
+*.sqlite3*
