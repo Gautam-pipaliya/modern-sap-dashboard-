@@ -191,9 +191,9 @@ AUTHENTICATION AND SECURITY MODEL
 - The Peak Level sign-in uses a custom server-side session cookie. The password
   is checked against DASHBOARD_USERNAME and DASHBOARD_PASSWORD. Successful
   sessions are held in the Node process memory and expire after 12 hours.
-- A fresh top-level page visit or browser reload asks for dashboard sign-in;
-  navigation inside an already open workbench remains authenticated. There is
-  also a Sign out action.
+- Sign in once in a browser profile; the session is shared across that profile's
+  tabs and windows. Closing/restarting the browser or restarting the server can
+  require another sign-in. There is also a Sign out action.
 - Dashboard authentication is shared access for this deployment. It is not
   organization SSO and it does not provide per-person roles or audit identity.
 - One configured SAP identity is used for SAP requests made by all dashboard

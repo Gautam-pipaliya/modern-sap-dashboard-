@@ -144,11 +144,8 @@ function safeCredentialEquals(actual, expected) {
 }
 
 const dashboardSessions = new Map();
-const dashboardEntryGrants = new Map();
 const dashboardSessionCookie = "sap_workbench_session";
-const dashboardEntryCookie = "sap_workbench_entry";
 const dashboardSessionLifetimeMs = 12 * 60 * 60 * 1000;
-const dashboardEntryLifetimeMs = 2 * 60 * 1000;
 
 function hashSessionToken(token) {
     return crypto.createHash("sha256").update(token).digest("hex");
@@ -174,7 +171,7 @@ function appendSessionCookie(res, req, name, value, clear = false) {
     res.append("Set-Cookie", `${name}=${value}; ${attributes.join("; ")}`);
 }
 
-function isTopLevelDocument(req) {
+function isDocumentRequest(req) {
     if (req.method !== "GET") return false;
     const fetchDestination = String(req.get("sec-fetch-dest") || "").toLowerCase();
     if (fetchDestination) return fetchDestination === "document";
@@ -209,26 +206,12 @@ function authenticateDashboard(req, res, next) {
     const session = sessionDigest ? dashboardSessions.get(sessionDigest) : null;
     if (session && session.expiresAt > Date.now()) {
         req.dashboardSessionDigest = sessionDigest;
-
-        if (isTopLevelDocument(req)) {
-            const entryToken = readCookie(req, dashboardEntryCookie);
-            const entryDigest = entryToken ? hashSessionToken(entryToken) : "";
-            const entry = entryDigest ? dashboardEntryGrants.get(entryDigest) : null;
-            if (entryDigest) dashboardEntryGrants.delete(entryDigest);
-            appendSessionCookie(res, req, dashboardEntryCookie, "", true);
-
-            if (!entry || entry.expiresAt <= Date.now() || entry.sessionDigest !== sessionDigest) {
-                res.setHeader("Cache-Control", "no-store");
-                return res.redirect(303, `/login?next=${encodeURIComponent(req.originalUrl || "/")}`);
-            }
-            res.setHeader("Cache-Control", "no-store");
-        }
-
+        if (isDocumentRequest(req)) res.setHeader("Cache-Control", "no-store");
         return next();
     }
 
     if (sessionDigest) dashboardSessions.delete(sessionDigest);
-    if (isTopLevelDocument(req)) {
+    if (isDocumentRequest(req)) {
         res.setHeader("Cache-Control", "no-store");
         return res.redirect(303, `/login?next=${encodeURIComponent(req.originalUrl || "/")}`);
     }
@@ -731,22 +714,12 @@ app.post("/auth/login", express.urlencoded({ extended: false, limit: "8kb" }), (
     for (const [digest, session] of dashboardSessions) {
         if (session.expiresAt <= now) dashboardSessions.delete(digest);
     }
-    for (const [digest, grant] of dashboardEntryGrants) {
-        if (grant.expiresAt <= now) dashboardEntryGrants.delete(digest);
-    }
-
     const sessionToken = crypto.randomBytes(32).toString("base64url");
-    const entryToken = crypto.randomBytes(32).toString("base64url");
     const sessionDigest = hashSessionToken(sessionToken);
     dashboardSessions.set(sessionDigest, { expiresAt: now + dashboardSessionLifetimeMs });
-    dashboardEntryGrants.set(hashSessionToken(entryToken), {
-        sessionDigest,
-        expiresAt: now + dashboardEntryLifetimeMs
-    });
 
     res.setHeader("Cache-Control", "no-store");
     appendSessionCookie(res, req, dashboardSessionCookie, sessionToken);
-    appendSessionCookie(res, req, dashboardEntryCookie, entryToken);
     return res.redirect(303, destination);
 });
 
@@ -807,7 +780,6 @@ app.post("/auth/logout", (req, res) => {
         dashboardSessions.delete(req.dashboardSessionDigest);
     }
     appendSessionCookie(res, req, dashboardSessionCookie, "", true);
-    appendSessionCookie(res, req, dashboardEntryCookie, "", true);
     res.setHeader("Cache-Control", "no-store");
     return res.json({ success: true });
 });
