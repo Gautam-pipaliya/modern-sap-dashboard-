@@ -1,0 +1,28 @@
+{
+  "id": "/",
+  "name": "Peak Level SAP Developer Workbench",
+  "short_name": "Peak Level",
+  "description": "A mobile-ready workbench for SAP development and integration.",
+  "start_url": "/?source=installed-app",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#eff4f8",
+  "theme_color": "#0875d1",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/assets/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

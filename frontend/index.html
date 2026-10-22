@@ -12,8 +12,14 @@
     <title>Peak Level | SAP Developer Workbench</title>
     <meta name="description" content="A responsive SAP developer workbench for ABAP, OData, data tools, and integrations">
     <meta name="theme-color" content="#0875d1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Peak Level">
 
 
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/assets/app-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/assets/app-icon-180.png">
     <link rel="stylesheet" href="/css/workbench.css">
 
     <link rel="stylesheet" href="/css/peak-level.css">
@@ -117,6 +123,17 @@
             title="Open SAP chatbot"
         >
             ✦ SAP Chatbot
+        </button>
+
+        <button
+            class="install-app-button"
+            id="installAppButton"
+            type="button"
+            aria-label="Install Peak Level on this device"
+            title="Install Peak Level on this device"
+            hidden
+        >
+            Install
         </button>
 
 

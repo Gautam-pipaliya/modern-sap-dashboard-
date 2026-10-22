@@ -8547,6 +8547,50 @@ ${this.escapeHtml(pretty)}
     } catch (_) {}
 
     /* ========================================================
+       INSTALLABLE WORKBENCH
+    ======================================================== */
+    const installAppButton = document.getElementById("installAppButton");
+    let deferredInstallPrompt = null;
+    const appIsInstalled = window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true;
+
+    if (installAppButton && !appIsInstalled) {
+        window.addEventListener("beforeinstallprompt", event => {
+            event.preventDefault();
+            deferredInstallPrompt = event;
+            installAppButton.hidden = false;
+        });
+
+        installAppButton.addEventListener("click", async () => {
+            if (!deferredInstallPrompt) return;
+
+            const promptEvent = deferredInstallPrompt;
+            deferredInstallPrompt = null;
+            installAppButton.hidden = true;
+
+            try {
+                await promptEvent.prompt();
+                const choice = await promptEvent.userChoice;
+                if (choice?.outcome === "accepted") app.toast("Peak Level was installed on this device");
+            } catch (error) {
+                console.warn("The app install prompt could not be opened.", error);
+            }
+        });
+
+        window.addEventListener("appinstalled", () => {
+            installAppButton.hidden = true;
+            deferredInstallPrompt = null;
+        });
+    }
+
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+            navigator.serviceWorker.register("/service-worker.js", { scope: "/" })
+                .catch(error => console.warn("Offline support could not be initialized.", error));
+        }, { once: true });
+    }
+
+    /* ========================================================
        MOBILE NAVIGATION
     ======================================================== */
     const mobileNavToggle = document.getElementById("mobileNavToggle");

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0875d1">
+  <title>You're offline | Peak Level</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", Arial, sans-serif; color: #173248; background: #eff4f8; }
+    * { box-sizing: border-box; }
+    body { display: grid; min-height: 100vh; min-height: 100dvh; place-items: center; margin: 0; padding: 24px; }
+    main { width: min(100%, 440px); padding: 32px; border: 1px solid #d8e2eb; border-radius: 16px; background: #fff; box-shadow: 0 16px 40px rgba(20, 47, 69, .1); text-align: center; }
+    .mark { display: grid; width: 54px; height: 54px; margin: 0 auto 20px; place-items: center; border-radius: 14px; background: linear-gradient(145deg, #1687df, #07549a); color: #fff; font-weight: 800; }
+    h1 { margin: 0; font-size: 23px; letter-spacing: -.4px; }
+    p { margin: 10px 0 22px; color: #61778b; font-size: 14px; line-height: 1.6; }
+    button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 8px; background: #0875d1; color: #fff; font: inherit; font-weight: 650; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #67ace1; outline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark" aria-hidden="true">PL</div>
+    <h1>You're offline</h1>
+    <p>Reconnect to the internet to sign in and reach your SAP workbench. SAP records and API responses are never stored for offline use.</p>
+    <button type="button" onclick="window.location.reload()">Try again</button>
+  </main>
+</body>
+</html>

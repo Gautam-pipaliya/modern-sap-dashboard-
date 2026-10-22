@@ -474,3 +474,23 @@ tr:hover td { background: #f0f7fc; }
     .dashboard-capabilities { grid-template-columns: 1fr; }
     .capability-card { min-height: 126px; }
 }
+
+.install-app-button {
+    display: inline-flex;
+    min-height: 35px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 11px;
+    border: 1px solid #b9d3e6;
+    border-radius: 5px;
+    background: #edf6fc;
+    color: #07549a;
+    font: 650 10px "72", "Segoe UI", sans-serif;
+    cursor: pointer;
+}
+.install-app-button:hover { border-color: #80b5dc; background: #e2f1fb; }
+.install-app-button[hidden] { display: none !important; }
+
+@media (max-width: 600px) {
+    .install-app-button { min-height: 34px; padding: 0 8px; border-radius: 6px; font-size: 9px; }
+}
