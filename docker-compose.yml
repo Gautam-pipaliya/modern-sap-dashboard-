@@ -40,11 +40,14 @@ services:
       dockerfile: Dockerfile.chatbot
     restart: unless-stopped
     environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
-      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai/}
-      GEMINI_TIMEOUT_SECONDS: ${GEMINI_TIMEOUT_SECONDS:-60}
-      GEMINI_TRUST_ENV: ${GEMINI_TRUST_ENV:-true}
+      AI_PROVIDER: ${AI_PROVIDER:-auto}
+      AI_API_KEY: ${AI_API_KEY:-${GEMINI_API_KEY:-${OPENAI_API_KEY:-}}}
+      AI_MODEL: ${AI_MODEL:-${GEMINI_MODEL:-${OPENAI_MODEL:-}}}
+      AI_BASE_URL: ${AI_BASE_URL:-${GEMINI_BASE_URL:-${OPENAI_BASE_URL:-}}}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-${GEMINI_TIMEOUT_SECONDS:-${OPENAI_TIMEOUT_SECONDS:-60}}}
+      AI_TRUST_ENV: ${AI_TRUST_ENV:-${GEMINI_TRUST_ENV:-${OPENAI_TRUST_ENV:-true}}}
+      AI_MAX_OUTPUT_TOKENS: ${AI_MAX_OUTPUT_TOKENS:-${GEMINI_MAX_OUTPUT_TOKENS:-12000}}
+      AI_MAX_CONCURRENT_REQUESTS: ${AI_MAX_CONCURRENT_REQUESTS:-4}
       COPILOT_HOST: 0.0.0.0
       COPILOT_PORT: 8000
       COPILOT_MEMORY_DB: /app/data/copilot_memory.sqlite3

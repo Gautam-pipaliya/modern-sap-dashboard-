@@ -24,15 +24,18 @@ Relevant settings:
 
 | Variable | Purpose | Example |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | API credential used by the server-side chatbot | Set your private key locally; do not share it |
-| `OPENAI_MODEL` | Model used for chat and code generation | `gpt-4.1` |
-| `OPENAI_BASE_URL` | Optional API-compatible endpoint; defaults to OpenAI when omitted | `https://api.openai.com/v1` |
-| `OPENAI_TRUST_ENV` | Whether the Python HTTP client inherits system proxy and certificate variables | `false` for direct HTTPS when an inherited proxy is broken; `true` when your network requires that proxy |
-| `OPENAI_TIMEOUT_SECONDS` | Provider request timeout from 1 to 90 seconds | `60` |
+| `AI_PROVIDER` | `auto`, `openai`, `gemini`, or `compatible` | `auto` |
+| `AI_API_KEY` | Private key for the selected OpenAI-compatible provider | Provider API key |
+| `AI_MODEL` | Model name accepted by that provider | `gemini-3.8-flash` |
+| `AI_BASE_URL` | Provider's OpenAI-compatible API base URL | `https://generativelanguage.googleapis.com/v1beta/openai/` |
+| `AI_TRUST_ENV` | Whether the Python HTTP client inherits system proxy and certificate variables | `false` for direct HTTPS when an inherited proxy is broken; `true` when your network requires that proxy |
+| `AI_TIMEOUT_SECONDS` | Provider request timeout from 1 to 90 seconds | `60` |
+| `AI_MAX_OUTPUT_TOKENS` | Maximum generated response length, from 512 to 32,000 tokens; the selected model/provider may impose a lower limit | `12000` |
+| `AI_MAX_CONCURRENT_REQUESTS` | Maximum simultaneous provider requests, from 1 to 16; requests wait up to 15 seconds when capacity is full | `4` |
 | `CHATBOT_API_URL` | Dashboard-to-chatbot endpoint for a direct local run | `http://127.0.0.1:8000/api/chat` |
 | `COPILOT_HOST` / `COPILOT_PORT` | Address and port for the standalone chatbot service | `127.0.0.1` / `8000` |
 
-After changing `.env`, restart the chatbot service. In Docker Compose, recreate the services so they receive the new environment. Keep the chatbot port private; the browser should call the dashboard's `/api/chat` route.
+Use a provider that supports the OpenAI-compatible Chat Completions API and accepts the configured model. `AI_PROVIDER=auto` detects legacy Gemini/OpenAI keys; select `openai` or `gemini` explicitly, or choose `compatible` and set `AI_API_KEY`, `AI_MODEL`, and `AI_BASE_URL` for a compatible gateway. Image analysis depends on the chosen model supporting image inputs. The coding instructions and larger output budget help with complete source generation, but they do not train or fine-tune the provider's model. Existing `GEMINI_*` and `OPENAI_*` variables remain supported. `/health` reports whether a key is configured and which provider/model was selected, without returning secrets. After changing `.env`, restart the chatbot service. In Docker Compose, recreate the services so they receive the new environment. Keep the chatbot port private; the browser should call the dashboard's `/api/chat` route.
 
 ### Run locally
 
@@ -116,10 +119,10 @@ Memory is stored by the chatbot service in SQLite and can persist across service
 
 | Chat message or symptom | What it means | What to do |
 | --- | --- | --- |
-| `Cannot connect to the OpenAI API` | The chatbot cannot establish an HTTPS connection to the configured API endpoint. A proxy, firewall, DNS, or outbound network policy may block it. | Check network access to the API host. If direct HTTPS is allowed but an inherited proxy is failing, set `OPENAI_TRUST_ENV=false`; if a proxy is required, set it up and keep `OPENAI_TRUST_ENV=true`. Restart the chatbot after changing the setting. |
-| `OpenAI returned HTTP 429` | The provider accepted the connection but rejected the request for quota, billing, or rate-limit reasons. | Check the API project's usage, billing status, and rate limits. Wait for a temporary rate limit to clear or resolve the project quota issue. |
-| API key or permissions error | The provider rejected the credential or the key's project permissions. | Confirm `OPENAI_API_KEY` is present, active, and allowed to use the configured model. Keep the key private. |
-| Unsupported or rejected model/request | The configured provider does not accept the model or request settings. | Check `OPENAI_MODEL`, `OPENAI_BASE_URL`, and the provider's supported models and API format. |
+| `Cannot connect to the configured AI provider` | The chatbot cannot establish an HTTPS connection to the configured API endpoint. A proxy, firewall, DNS, or outbound network policy may block it. | Check `AI_BASE_URL` and network access. If direct HTTPS is allowed but an inherited proxy is failing, set `AI_TRUST_ENV=false`; if a proxy is required, set it up and keep `AI_TRUST_ENV=true`. Restart the chatbot after changing the setting. |
+| AI provider returned HTTP 429 | The provider accepted the connection but rejected the request for quota, billing, or rate-limit reasons. | Check the provider project's usage, billing status, and rate limits. |
+| API key or permissions error | The provider rejected the credential or the key's project permissions. | Confirm `AI_API_KEY` is present, active, and allowed to use `AI_MODEL`. Keep the key private. |
+| Unsupported or rejected model/request | The configured provider does not accept the model or request settings. | Check `AI_MODEL`, `AI_BASE_URL`, and the provider's supported models and API format. |
 | File type or size error | The attachment is unsupported, too large, or could not be read. | Use PDF, DOCX, text/code, or supported images; keep each file at or below 4 MB and the message total at or below 6 MB. |
 | A greeting works but detailed questions fail | Greetings are answered locally; normal answers and file analysis require the AI provider. | Resolve the provider connection, key, model, and usage issue. |
 | Dashboard chat reports service unavailable | The dashboard cannot reach the private chatbot service. | Check that both services are running and `CHATBOT_API_URL` points to the chatbot service from the dashboard process/container. |

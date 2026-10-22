@@ -58,11 +58,17 @@ services:
         value: "8000"
       - key: COPILOT_MEMORY_DB
         value: /app/data/copilot_memory.sqlite3
-      - key: GEMINI_API_KEY
+      - key: AI_API_KEY
         sync: false
-      - key: GEMINI_MODEL
+      - key: AI_MODEL
         value: gemini-3.8-flash
-      - key: GEMINI_BASE_URL
+      - key: AI_BASE_URL
         value: https://generativelanguage.googleapis.com/v1beta/openai/
-      - key: GEMINI_TIMEOUT_SECONDS
+      - key: AI_TIMEOUT_SECONDS
         value: "60"
+      - key: AI_TRUST_ENV
+        value: "true"
+      - key: AI_MAX_OUTPUT_TOKENS
+        value: "12000"
+      - key: AI_MAX_CONCURRENT_REQUESTS
+        value: "4"
