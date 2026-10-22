@@ -11,5 +11,8 @@ __pycache__
 *.p12
 *.pfx
 certs
+!certs/
+certs/*
+!certs/sap-server.pem
 data
 *.sqlite3*
