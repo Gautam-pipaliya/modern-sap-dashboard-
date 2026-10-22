@@ -32,6 +32,10 @@ if (typeof tls.getCACertificates === "function") {
     }
 }
 let sapCa = [...tls.rootCertificates, ...systemCa];
+const bundledSapCaPath = path.resolve(__dirname, "..", "certs", "sap-server.pem");
+if (fs.existsSync(bundledSapCaPath)) {
+    sapCa.push(fs.readFileSync(bundledSapCaPath, "utf8"));
+}
 if (sapCaConfig) {
     const configuredCa = String(sapCaConfig).trim();
     if (configuredCa.includes("-----BEGIN CERTIFICATE-----")) {

@@ -30,6 +30,10 @@ if (typeof tls.getCACertificates === 'function') {
   }
 }
 const sapCa = [...tls.rootCertificates, ...systemCa];
+const bundledSapCaPath = path.resolve(__dirname, '..', 'certs', 'sap-server.pem');
+if (fs.existsSync(bundledSapCaPath)) {
+  sapCa.push(fs.readFileSync(bundledSapCaPath, 'utf8'));
+}
 if (process.env.SAP_CA_CERT) {
   const certificatePath = path.resolve(__dirname, '..', process.env.SAP_CA_CERT);
   try {
