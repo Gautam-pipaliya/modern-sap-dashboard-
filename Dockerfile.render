@@ -25,6 +25,7 @@ RUN /opt/chatbot-venv/bin/pip install --no-cache-dir -r requirements.txt
 
 COPY backend ./backend
 COPY frontend ./frontend
+COPY certs/sap-server.pem ./certs/sap-server.pem
 COPY app.py ./app.py
 COPY scripts/start-render.sh ./scripts/start-render.sh
 RUN chmod 0555 /app/scripts/start-render.sh && bash -n /app/scripts/start-render.sh

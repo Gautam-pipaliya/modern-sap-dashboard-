@@ -39,9 +39,9 @@ services:
       - key: SAP_TLS_REJECT_UNAUTHORIZED
         value: "true"
       - key: SAP_TLS_SERVERNAME
-        sync: false
+        value: s42022.server.com
       - key: SAP_CA_CERT
-        sync: false
+        value: certs/sap-server.pem
       - key: AI_PROVIDER
         value: auto
       - key: AI_API_KEY
